@@ -49,7 +49,7 @@ export function DashboardHeader({ stats, onOpenLeaderboard }: DashboardHeaderPro
 
   return (
     <>
-      <header className="border-b border-border bg-background px-4 pb-4 pt-2">
+      <header className="border-b border-border bg-background px-4 py-8">
         {/* Date and greeting */}
         <div className="mb-4 flex items-start justify-between">
           <div>
