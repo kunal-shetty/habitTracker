@@ -2,19 +2,33 @@
 
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Check } from "lucide-react"
+import { Check, Sword } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import type { Habit, HabitCategory, HabitFrequency } from "@/lib/types"
-import { CATEGORY_CONFIG, HABIT_ICONS, HABIT_COLORS } from "@/lib/constants"
+import type { Habit, HabitCategory, HabitFrequency, HabitDifficulty } from "@/lib/types"
+import { CATEGORY_CONFIG, HABIT_ICONS, HABIT_COLORS, DIFFICULTY_CONFIG } from "@/lib/constants"
 import { HabitIcon } from "./habit-icon"
 
 interface AddHabitSheetProps {
   isOpen: boolean
   onClose: () => void
-  onAdd: (habit: Omit<Habit, "id" | "createdAt" | "archived">) => void
+  onAdd: (
+    habit: Omit<
+      Habit,
+      | "id"
+      | "createdAt"
+      | "archived"
+      | "level"
+      | "experience"
+      | "health"
+      | "maxHealth"
+      | "power"
+      | "evolutionStage"
+      | "isMastered"
+    >,
+  ) => void
 }
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
@@ -31,6 +45,7 @@ export function AddHabitSheet({ isOpen, onClose, onAdd }: AddHabitSheetProps) {
   const [targetCount, setTargetCount] = useState(1)
   const [reminderEnabled, setReminderEnabled] = useState(false)
   const [reminderTime, setReminderTime] = useState("09:00")
+  const [difficulty, setDifficulty] = useState<HabitDifficulty>("medium")
 
   const resetForm = () => {
     setStep(1)
@@ -44,6 +59,7 @@ export function AddHabitSheet({ isOpen, onClose, onAdd }: AddHabitSheetProps) {
     setTargetCount(1)
     setReminderEnabled(false)
     setReminderTime("09:00")
+    setDifficulty("medium")
   }
 
   const handleClose = () => {
@@ -65,6 +81,7 @@ export function AddHabitSheet({ isOpen, onClose, onAdd }: AddHabitSheetProps) {
       targetCount,
       reminderEnabled,
       reminderTime: reminderEnabled ? reminderTime : undefined,
+      difficulty,
     })
 
     handleClose()
@@ -288,6 +305,35 @@ export function AddHabitSheet({ isOpen, onClose, onAdd }: AddHabitSheetProps) {
                     <div className="text-center">
                       <h2 className="text-xl font-bold text-foreground">Set your schedule</h2>
                       <p className="text-sm text-muted-foreground">When do you want to do this?</p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2">
+                        <Sword className="h-4 w-4 text-amber-500" />
+                        Difficulty (affects XP earned)
+                      </Label>
+                      <div className="grid grid-cols-4 gap-2">
+                        {(Object.keys(DIFFICULTY_CONFIG) as HabitDifficulty[]).map((diff) => {
+                          const config = DIFFICULTY_CONFIG[diff]
+                          return (
+                            <motion.button
+                              key={diff}
+                              type="button"
+                              className={`rounded-xl py-3 text-center transition-colors ${
+                                difficulty === diff ? "text-white" : "bg-muted text-foreground"
+                              }`}
+                              style={{
+                                backgroundColor: difficulty === diff ? config.color : undefined,
+                              }}
+                              onClick={() => setDifficulty(diff)}
+                              whileTap={{ scale: 0.95 }}
+                            >
+                              <span className="text-sm font-medium">{config.label}</span>
+                              <p className="text-[10px] opacity-80">{config.xpMultiplier}x XP</p>
+                            </motion.button>
+                          )
+                        })}
+                      </div>
                     </div>
 
                     {/* Frequency */}

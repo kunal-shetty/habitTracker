@@ -1,4 +1,4 @@
-import type { Habit, HabitCompletion, UserStats, OnboardingState, AuthState } from "./types"
+import type { Habit, HabitCompletion, UserStats, OnboardingState, AuthState, Quest, GraceToken } from "./types"
 
 const STORAGE_KEYS = {
   HABITS: "habit-tracker-habits",
@@ -7,6 +7,8 @@ const STORAGE_KEYS = {
   ONBOARDING: "habit-tracker-onboarding",
   THEME: "habit-tracker-theme",
   AUTH: "habit-tracker-auth",
+  QUESTS: "habit-tracker-quests",
+  GRACE_TOKENS: "habit-tracker-grace-tokens",
 }
 
 function safeGetItem<T>(key: string, defaultValue: T): T {
@@ -55,7 +57,6 @@ export function updateHabit(updatedHabit: Habit): void {
 export function deleteHabit(habitId: string): void {
   const habits = getHabits().filter((h) => h.id !== habitId)
   saveHabits(habits)
-  // Also delete completions for this habit
   const completions = getCompletions().filter((c) => c.habitId !== habitId)
   saveCompletions(completions)
 }
@@ -83,16 +84,52 @@ export function getCompletionsForHabit(habitId: string): HabitCompletion[] {
   return getCompletions().filter((c) => c.habitId === habitId)
 }
 
+const DEFAULT_STATS: UserStats = {
+  totalCompletions: 0,
+  currentOverallStreak: 0,
+  longestOverallStreak: 0,
+  totalPoints: 0,
+  level: 1,
+  achievements: [],
+  totalXp: 0,
+  prestigeLevel: 0,
+  streakMultiplier: 1,
+  graceTokens: [],
+  availableGraceTokens: 0,
+  questsCompleted: 0,
+  perfectDays: 0,
+  currentDailyQuests: [],
+  currentWeeklyChallenge: undefined,
+  currentMonthlyTheme: undefined,
+  unlockedRewards: [],
+  selectedTheme: "default",
+  selectedAvatar: "default",
+  selectedStreakEffect: "default",
+  comebackData: {
+    lastActiveDate: new Date().toISOString(),
+    missedDays: 0,
+    isInComebackMode: false,
+    comebackQuestsCompleted: 0,
+    welcomeBackRewardClaimed: false,
+  },
+  notificationPreferences: {
+    enabled: true,
+    streakReminders: true,
+    questReminders: true,
+    achievementAlerts: true,
+    gentleNudges: true,
+    preferredTimes: ["09:00", "21:00"],
+  },
+  friends: [],
+  weeklyRank: undefined,
+  socialFeaturesEnabled: false,
+}
+
 // Stats
 export function getStats(): UserStats {
-  return safeGetItem<UserStats>(STORAGE_KEYS.STATS, {
-    totalCompletions: 0,
-    currentOverallStreak: 0,
-    longestOverallStreak: 0,
-    totalPoints: 0,
-    level: 1,
-    achievements: [],
-  })
+  const stored = safeGetItem<UserStats>(STORAGE_KEYS.STATS, DEFAULT_STATS)
+  // Merge with defaults to handle new properties
+  return { ...DEFAULT_STATS, ...stored }
 }
 
 export function saveStats(stats: UserStats): void {
@@ -140,4 +177,31 @@ export function clearAuthState(): void {
   } catch (e) {
     console.error("Failed to clear auth state:", e)
   }
+}
+
+export function getQuests(): Quest[] {
+  return safeGetItem<Quest[]>(STORAGE_KEYS.QUESTS, [])
+}
+
+export function saveQuests(quests: Quest[]): void {
+  safeSetItem(STORAGE_KEYS.QUESTS, quests)
+}
+
+export function getGraceTokens(): GraceToken[] {
+  return safeGetItem<GraceToken[]>(STORAGE_KEYS.GRACE_TOKENS, [])
+}
+
+export function saveGraceTokens(tokens: GraceToken[]): void {
+  safeSetItem(STORAGE_KEYS.GRACE_TOKENS, tokens)
+}
+
+export function clearAllData(): void {
+  if (typeof window === "undefined") return
+  Object.values(STORAGE_KEYS).forEach((key) => {
+    try {
+      localStorage.removeItem(key)
+    } catch (e) {
+      console.error(`Failed to remove ${key}:`, e)
+    }
+  })
 }

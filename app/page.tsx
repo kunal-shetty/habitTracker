@@ -30,7 +30,7 @@ export default function HomePage() {
 
   if (!isLoaded || authLoading) {
     return (
-      <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <div className="flex h-dvh items-center justify-center bg-primary">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-foreground border-t-transparent" />
         </div>
@@ -39,7 +39,7 @@ export default function HomePage() {
   }
 
   return (
-    <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       {showSplash ? (
         <SplashScreen onComplete={handleSplashComplete} />
       ) : !onboarding.completed && !showAuth ? (

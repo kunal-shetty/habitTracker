@@ -2,20 +2,40 @@
 
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { Moon, Sun, Smartphone, Bell, Trash2, RefreshCw, ChevronRight, Shield, Info, Heart } from "lucide-react"
+import {
+  Moon,
+  Sun,
+  Smartphone,
+  Bell,
+  Trash2,
+  RefreshCw,
+  ChevronRight,
+  Shield,
+  Info,
+  Heart,
+  LogOut,
+  User,
+  Crown,
+  Sparkles,
+} from "lucide-react"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
+import { useAuth } from "@/hooks/use-auth"
+import type { UserStats } from "@/lib/types"
 
 interface SettingsViewProps {
   onResetOnboarding: () => void
   onClearData: () => void
+  stats?: UserStats
 }
 
-export function SettingsView({ onResetOnboarding, onClearData }: SettingsViewProps) {
-  const { theme, setTheme, resolvedTheme } = useTheme()
+export function SettingsView({ onResetOnboarding, onClearData, stats }: SettingsViewProps) {
+  const { theme, setTheme } = useTheme()
+  const { user, isAuthenticated, logout } = useAuth()
   const [mounted, setMounted] = useState(false)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false)
 
   useEffect(() => {
     setMounted(true)
@@ -32,13 +52,76 @@ export function SettingsView({ onResetOnboarding, onClearData }: SettingsViewPro
     setShowClearConfirm(false)
   }
 
+  const handleLogout = async () => {
+    await logout()
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-6">
+      {/* Account Section */}
+      {isAuthenticated && user && (
+        <motion.div
+          className="overflow-hidden rounded-xl bg-card shadow-sm"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div className="bg-gradient-to-r from-primary/20 to-chart-2/20 p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-xl font-bold text-primary-foreground">
+                {user.name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase()}
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold">{user.name || "User"}</h3>
+                <p className="text-sm text-muted-foreground">{user.email}</p>
+              </div>
+              {stats && stats.level >= 20 && (
+                <div className="flex items-center gap-1 rounded-full bg-amber-500/20 px-2 py-1 text-xs font-medium text-amber-600">
+                  <Crown className="h-3 w-3" />
+                  Pro
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="p-4">
+            <div className="flex items-center justify-between rounded-lg p-3 transition-colors hover:bg-muted">
+              <div className="flex items-center gap-3">
+                <User className="h-5 w-5 text-muted-foreground" />
+                <span>Edit Profile</span>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Premium Upsell (if not premium) */}
+      {stats && stats.level < 20 && (
+        <motion.div
+          className="relative overflow-hidden rounded-xl bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-amber-500/20 p-4"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+        >
+          <div className="absolute -right-4 -top-4 h-20 w-20 rounded-full bg-amber-500/20 blur-2xl" />
+          <div className="relative flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-pink-500">
+              <Sparkles className="h-6 w-6 text-white" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold">Upgrade to Pro</h3>
+              <p className="text-xs text-muted-foreground">Unlock unlimited habits, themes, and more</p>
+            </div>
+            <ChevronRight className="h-5 w-5 text-muted-foreground" />
+          </div>
+        </motion.div>
+      )}
+
       {/* Appearance */}
       <motion.div
         className="rounded-xl bg-card p-4 shadow-sm"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
       >
         <h3 className="mb-4 font-semibold">Appearance</h3>
         <div className="grid grid-cols-3 gap-2">
@@ -66,7 +149,7 @@ export function SettingsView({ onResetOnboarding, onClearData }: SettingsViewPro
         className="rounded-xl bg-card p-4 shadow-sm"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
+        transition={{ delay: 0.15 }}
       >
         <h3 className="mb-4 font-semibold">Notifications</h3>
         <div className="space-y-4">
@@ -80,7 +163,7 @@ export function SettingsView({ onResetOnboarding, onClearData }: SettingsViewPro
                 <p className="text-xs text-muted-foreground">Get notified about your habits</p>
               </div>
             </div>
-            <Switch />
+            <Switch checked={notificationsEnabled} onCheckedChange={setNotificationsEnabled} />
           </div>
         </div>
       </motion.div>
@@ -118,6 +201,27 @@ export function SettingsView({ onResetOnboarding, onClearData }: SettingsViewPro
         </div>
       </motion.div>
 
+      {/* Logout */}
+      {isAuthenticated && (
+        <motion.div
+          className="rounded-xl bg-card p-4 shadow-sm"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+        >
+          <button
+            onClick={handleLogout}
+            className="flex w-full items-center justify-between rounded-lg p-3 text-destructive transition-colors hover:bg-destructive/10"
+          >
+            <div className="flex items-center gap-3">
+              <LogOut className="h-5 w-5" />
+              <span>Log Out</span>
+            </div>
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </motion.div>
+      )}
+
       {/* About */}
       <motion.div
         className="rounded-xl bg-card p-4 shadow-sm"
@@ -132,7 +236,7 @@ export function SettingsView({ onResetOnboarding, onClearData }: SettingsViewPro
               <Info className="h-5 w-5 text-muted-foreground" />
               <span>Version</span>
             </div>
-            <span className="text-sm text-muted-foreground">1.0.0</span>
+            <span className="text-sm text-muted-foreground">2.0.0</span>
           </div>
 
           <div className="flex items-center justify-between rounded-lg p-3">
@@ -150,7 +254,7 @@ export function SettingsView({ onResetOnboarding, onClearData }: SettingsViewPro
         className="flex items-center justify-center gap-1 py-4 text-sm text-muted-foreground"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.4 }}
+        transition={{ delay: 0.35 }}
       >
         Made with <Heart className="h-4 w-4 text-chart-3" fill="currentColor" /> using v0
       </motion.div>

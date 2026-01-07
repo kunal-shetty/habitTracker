@@ -1,4 +1,4 @@
-import type { Achievement, HabitCategory } from "./types"
+import type { Achievement, HabitCategory, Rarity, LevelUpReward, StreakMilestone, Reward } from "./types"
 
 export const CATEGORY_CONFIG: Record<HabitCategory, { label: string; icon: string; color: string }> = {
   health: { label: "Health", icon: "Heart", color: "#ef4444" },
@@ -32,6 +32,11 @@ export const HABIT_ICONS = [
   "Phone",
   "Laptop",
   "Briefcase",
+  "Sword",
+  "Shield",
+  "Crown",
+  "Gem",
+  "Sparkles",
 ]
 
 export const HABIT_COLORS = [
@@ -49,7 +54,39 @@ export const HABIT_COLORS = [
   "#ec4899",
 ]
 
+export const RARITY_CONFIG: Record<Rarity, { color: string; bgColor: string; multiplier: number }> = {
+  common: { color: "#9ca3af", bgColor: "#f3f4f6", multiplier: 1 },
+  uncommon: { color: "#22c55e", bgColor: "#dcfce7", multiplier: 1.25 },
+  rare: { color: "#3b82f6", bgColor: "#dbeafe", multiplier: 1.5 },
+  epic: { color: "#a855f7", bgColor: "#f3e8ff", multiplier: 2 },
+  legendary: { color: "#f59e0b", bgColor: "#fef3c7", multiplier: 3 },
+}
+
+export const RARITY_COLORS: Record<Rarity, { text: string; bg: string; border: string }> = {
+  common: { text: "#6b7280", bg: "#f3f4f6", border: "#d1d5db" },
+  uncommon: { text: "#16a34a", bg: "#dcfce7", border: "#86efac" },
+  rare: { text: "#2563eb", bg: "#dbeafe", border: "#93c5fd" },
+  epic: { text: "#9333ea", bg: "#f3e8ff", border: "#c4b5fd" },
+  legendary: { text: "#d97706", bg: "#fef3c7", border: "#fcd34d" },
+}
+
+export const DIFFICULTY_CONFIG = {
+  easy: { label: "Easy", xpMultiplier: 1, color: "#22c55e" },
+  medium: { label: "Medium", xpMultiplier: 1.5, color: "#f59e0b" },
+  hard: { label: "Hard", xpMultiplier: 2, color: "#f97316" },
+  extreme: { label: "Extreme", xpMultiplier: 3, color: "#ef4444" },
+}
+
+export const EVOLUTION_CONFIG = {
+  seed: { label: "Seed", icon: "Sprout", minLevel: 1, color: "#a3e635" },
+  sprout: { label: "Sprout", icon: "Leaf", minLevel: 5, color: "#22c55e" },
+  bloom: { label: "Bloom", icon: "Flower", minLevel: 15, color: "#ec4899" },
+  flourish: { label: "Flourish", icon: "Trees", minLevel: 30, color: "#14b8a6" },
+  transcend: { label: "Transcend", icon: "Sparkles", minLevel: 50, color: "#f59e0b" },
+}
+
 export const ACHIEVEMENTS: Achievement[] = [
+  // Starter achievements
   {
     id: "first-habit",
     name: "Getting Started",
@@ -57,7 +94,18 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: "Rocket",
     requirement: 1,
     type: "habits",
+    rarity: "common",
   },
+  {
+    id: "first-completion",
+    name: "First Step",
+    description: "Complete your first habit",
+    icon: "Footprints",
+    requirement: 1,
+    type: "completions",
+    rarity: "common",
+  },
+  // Streak achievements
   {
     id: "streak-3",
     name: "On a Roll",
@@ -65,6 +113,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: "Flame",
     requirement: 3,
     type: "streak",
+    rarity: "common",
   },
   {
     id: "streak-7",
@@ -73,14 +122,34 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: "Flame",
     requirement: 7,
     type: "streak",
+    rarity: "uncommon",
+  },
+  {
+    id: "streak-14",
+    name: "Fortnight Fighter",
+    description: "Maintain a 14-day streak",
+    icon: "Flame",
+    requirement: 14,
+    type: "streak",
+    rarity: "uncommon",
   },
   {
     id: "streak-30",
     name: "Monthly Master",
     description: "Maintain a 30-day streak",
-    icon: "Flame",
+    icon: "Crown",
     requirement: 30,
     type: "streak",
+    rarity: "rare",
+  },
+  {
+    id: "streak-60",
+    name: "Double Down",
+    description: "Maintain a 60-day streak",
+    icon: "Crown",
+    requirement: 60,
+    type: "streak",
+    rarity: "rare",
   },
   {
     id: "streak-100",
@@ -89,7 +158,19 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: "Crown",
     requirement: 100,
     type: "streak",
+    rarity: "epic",
   },
+  {
+    id: "streak-365",
+    name: "Year of Discipline",
+    description: "Maintain a 365-day streak",
+    icon: "Crown",
+    requirement: 365,
+    type: "streak",
+    rarity: "legendary",
+    isHidden: true,
+  },
+  // Completion achievements
   {
     id: "completions-10",
     name: "Momentum",
@@ -97,6 +178,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: "Zap",
     requirement: 10,
     type: "completions",
+    rarity: "common",
   },
   {
     id: "completions-50",
@@ -105,6 +187,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: "Trophy",
     requirement: 50,
     type: "completions",
+    rarity: "uncommon",
   },
   {
     id: "completions-100",
@@ -113,6 +196,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: "Medal",
     requirement: 100,
     type: "completions",
+    rarity: "uncommon",
   },
   {
     id: "completions-500",
@@ -121,7 +205,28 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: "Star",
     requirement: 500,
     type: "completions",
+    rarity: "rare",
   },
+  {
+    id: "completions-1000",
+    name: "Habit Machine",
+    description: "Complete 1000 habit entries",
+    icon: "Gem",
+    requirement: 1000,
+    type: "completions",
+    rarity: "epic",
+  },
+  {
+    id: "completions-5000",
+    name: "Transcendent",
+    description: "Complete 5000 habit entries",
+    icon: "Sparkles",
+    requirement: 5000,
+    type: "completions",
+    rarity: "legendary",
+    isHidden: true,
+  },
+  // Habit count achievements
   {
     id: "habits-5",
     name: "Habit Builder",
@@ -129,7 +234,18 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: "Layers",
     requirement: 5,
     type: "habits",
+    rarity: "uncommon",
   },
+  {
+    id: "habits-10",
+    name: "Life Designer",
+    description: "Create 10 habits",
+    icon: "Compass",
+    requirement: 10,
+    type: "habits",
+    rarity: "rare",
+  },
+  // Level achievements
   {
     id: "level-5",
     name: "Rising Star",
@@ -137,6 +253,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: "TrendingUp",
     requirement: 5,
     type: "level",
+    rarity: "common",
   },
   {
     id: "level-10",
@@ -145,13 +262,332 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: "Award",
     requirement: 10,
     type: "level",
+    rarity: "uncommon",
+  },
+  {
+    id: "level-25",
+    name: "Elite Performer",
+    description: "Reach level 25",
+    icon: "Shield",
+    requirement: 25,
+    type: "level",
+    rarity: "rare",
+  },
+  {
+    id: "level-50",
+    name: "Grandmaster",
+    description: "Reach level 50",
+    icon: "Sword",
+    requirement: 50,
+    type: "level",
+    rarity: "epic",
+  },
+  {
+    id: "level-100",
+    name: "Immortal",
+    description: "Reach level 100",
+    icon: "Crown",
+    requirement: 100,
+    type: "level",
+    rarity: "legendary",
+    isHidden: true,
+  },
+  // Quest achievements
+  {
+    id: "quest-first",
+    name: "Quest Accepted",
+    description: "Complete your first quest",
+    icon: "Scroll",
+    requirement: 1,
+    type: "quest",
+    rarity: "common",
+  },
+  {
+    id: "quest-10",
+    name: "Adventurer",
+    description: "Complete 10 quests",
+    icon: "Map",
+    requirement: 10,
+    type: "quest",
+    rarity: "uncommon",
+  },
+  {
+    id: "quest-50",
+    name: "Quest Master",
+    description: "Complete 50 quests",
+    icon: "Compass",
+    requirement: 50,
+    type: "quest",
+    rarity: "rare",
+  },
+  // Special hidden achievements
+  {
+    id: "perfect-week",
+    name: "Perfect Week",
+    description: "Complete all habits for 7 consecutive days",
+    icon: "Calendar",
+    requirement: 7,
+    type: "special",
+    rarity: "rare",
+    isHidden: true,
+  },
+  {
+    id: "early-bird",
+    name: "Early Bird",
+    description: "Complete all habits before 9 AM",
+    icon: "Sunrise",
+    requirement: 1,
+    type: "special",
+    rarity: "uncommon",
+    isHidden: true,
+  },
+  {
+    id: "night-owl",
+    name: "Night Owl",
+    description: "Complete habits after 10 PM for a week",
+    icon: "Moon",
+    requirement: 7,
+    type: "special",
+    rarity: "uncommon",
+    isHidden: true,
+  },
+  {
+    id: "comeback-kid",
+    name: "Comeback Kid",
+    description: "Return after 7+ days away and complete a habit",
+    icon: "RotateCcw",
+    requirement: 1,
+    type: "special",
+    rarity: "rare",
+    isHidden: true,
+  },
+  {
+    id: "habit-master",
+    name: "Habit Master",
+    description: "Evolve a habit to Transcend stage",
+    icon: "Sparkles",
+    requirement: 1,
+    type: "special",
+    rarity: "legendary",
+    isHidden: true,
   },
 ]
 
 export const LEVEL_THRESHOLDS = [
   0, 100, 250, 500, 800, 1200, 1700, 2300, 3000, 4000, 5000, 6500, 8000, 10000, 12500, 15000, 18000, 22000, 27000,
-  33000, 40000,
+  33000, 40000, 48000, 57000, 67000, 78000, 90000, 103000, 117000, 132000, 150000,
+]
+
+export const LEVEL_UP_REWARDS: LevelUpReward[] = [
+  { level: 5, xpRequired: 1200, rewards: { graceTokens: 1, title: "Novice" } },
+  { level: 10, xpRequired: 5000, rewards: { graceTokens: 2, reward: "theme-ocean", title: "Apprentice" } },
+  { level: 15, xpRequired: 10000, rewards: { graceTokens: 2, title: "Practitioner" } },
+  { level: 20, xpRequired: 18000, rewards: { graceTokens: 3, reward: "theme-sunset", title: "Expert" } },
+  { level: 25, xpRequired: 27000, rewards: { graceTokens: 3, achievement: "level-25", title: "Master" } },
+  { level: 30, xpRequired: 40000, rewards: { graceTokens: 4, reward: "theme-midnight", title: "Grandmaster" } },
+  { level: 40, xpRequired: 67000, rewards: { graceTokens: 5, title: "Legend" } },
+  {
+    level: 50,
+    xpRequired: 90000,
+    rewards: { graceTokens: 6, reward: "theme-aurora", achievement: "streak-365", title: "Immortal" },
+  },
+]
+
+export const STREAK_MILESTONES: StreakMilestone[] = [
+  { days: 3, name: "Warming Up", icon: "Flame", xpBonus: 25 },
+  { days: 7, name: "Week Strong", icon: "Flame", xpBonus: 75, achievement: "streak-7" },
+  { days: 14, name: "Fortnight", icon: "Flame", xpBonus: 150, achievement: "streak-14" },
+  { days: 21, name: "Habit Formed", icon: "Flame", xpBonus: 250 },
+  { days: 30, name: "Monthly Master", icon: "Crown", xpBonus: 400, achievement: "streak-30" },
+  { days: 60, name: "Double Down", icon: "Crown", xpBonus: 800, achievement: "streak-60" },
+  { days: 100, name: "Century Club", icon: "Crown", xpBonus: 1500, achievement: "streak-100" },
+  { days: 365, name: "Year Champion", icon: "Crown", xpBonus: 5000, achievement: "streak-365" },
 ]
 
 export const POINTS_PER_COMPLETION = 10
 export const STREAK_BONUS_MULTIPLIER = 0.5
+export const BASE_XP_PER_COMPLETION = 15
+export const MAX_STREAK_MULTIPLIER = 5
+export const HABIT_DAMAGE_PER_MISS = 10
+export const HABIT_HEAL_PER_COMPLETION = 5
+export const HABIT_XP_PER_COMPLETION = 10
+export const HABIT_LEVELS_TO_EVOLVE = [5, 15, 30, 50]
+
+export const QUEST_TEMPLATES = {
+  daily: [
+    {
+      title: "Early Achiever",
+      description: "Complete 3 habits before noon",
+      requirement: { type: "complete_before_time" as const, count: 3, timeLimit: "12:00" },
+      xpReward: 50,
+    },
+    {
+      title: "Perfect Morning",
+      description: "Complete all habits before 10 AM",
+      requirement: { type: "complete_before_time" as const, count: 0, timeLimit: "10:00" },
+      xpReward: 100,
+    },
+    {
+      title: "Streak Guardian",
+      description: "Maintain your streak today",
+      requirement: { type: "maintain_streak" as const, count: 1 },
+      xpReward: 30,
+    },
+    {
+      title: "XP Hunter",
+      description: "Earn 100 XP today",
+      requirement: { type: "earn_xp" as const, count: 100 },
+      xpReward: 40,
+    },
+    {
+      title: "Perfect Day",
+      description: "Complete all your habits today",
+      requirement: { type: "perfect_day" as const, count: 1 },
+      xpReward: 75,
+      graceTokenReward: 1,
+    },
+  ],
+  weekly: [
+    {
+      title: "Week Warrior",
+      description: "Maintain a 7-day streak",
+      requirement: { type: "maintain_streak" as const, count: 7 },
+      xpReward: 300,
+      graceTokenReward: 2,
+    },
+    {
+      title: "XP Master",
+      description: "Earn 500 XP this week",
+      requirement: { type: "earn_xp" as const, count: 500 },
+      xpReward: 200,
+    },
+    {
+      title: "Explorer",
+      description: "Try a new habit this week",
+      requirement: { type: "try_new_habit" as const, count: 1 },
+      xpReward: 150,
+    },
+  ],
+  monthly: [
+    {
+      title: "Monthly Champion",
+      description: "Complete 100 habit entries this month",
+      requirement: { type: "complete_habits" as const, count: 100 },
+      xpReward: 1000,
+      graceTokenReward: 5,
+    },
+  ],
+}
+
+export const REWARDS: Reward[] = [
+  // Themes
+  {
+    id: "theme-ocean",
+    name: "Ocean Breeze",
+    description: "A calming blue theme",
+    type: "theme",
+    rarity: "uncommon",
+    unlockCondition: { type: "level", requirement: 10 },
+    isUnlocked: false,
+  },
+  {
+    id: "theme-sunset",
+    name: "Golden Hour",
+    description: "Warm sunset colors",
+    type: "theme",
+    rarity: "rare",
+    unlockCondition: { type: "level", requirement: 20 },
+    isUnlocked: false,
+  },
+  {
+    id: "theme-midnight",
+    name: "Midnight Purple",
+    description: "Deep purple darkness",
+    type: "theme",
+    rarity: "rare",
+    unlockCondition: { type: "level", requirement: 30 },
+    isUnlocked: false,
+  },
+  {
+    id: "theme-aurora",
+    name: "Aurora Borealis",
+    description: "Northern lights magic",
+    type: "theme",
+    rarity: "legendary",
+    unlockCondition: { type: "level", requirement: 50 },
+    isUnlocked: false,
+  },
+  // Streak effects
+  {
+    id: "streak-fire",
+    name: "Fire Trail",
+    description: "Fiery streak animation",
+    type: "streak_effect",
+    rarity: "uncommon",
+    unlockCondition: { type: "streak", requirement: 14 },
+    isUnlocked: false,
+  },
+  {
+    id: "streak-lightning",
+    name: "Lightning Bolt",
+    description: "Electric streak effect",
+    type: "streak_effect",
+    rarity: "rare",
+    unlockCondition: { type: "streak", requirement: 30 },
+    isUnlocked: false,
+  },
+  {
+    id: "streak-rainbow",
+    name: "Rainbow Wave",
+    description: "Colorful streak celebration",
+    type: "streak_effect",
+    rarity: "epic",
+    unlockCondition: { type: "streak", requirement: 60 },
+    isUnlocked: false,
+  },
+  // Animations
+  {
+    id: "anim-confetti",
+    name: "Confetti Burst",
+    description: "Celebration confetti",
+    type: "animation",
+    rarity: "common",
+    unlockCondition: { type: "completions", requirement: 50 },
+    isUnlocked: false,
+  },
+  {
+    id: "anim-fireworks",
+    name: "Fireworks",
+    description: "Explosive celebration",
+    type: "animation",
+    rarity: "rare",
+    unlockCondition: { type: "completions", requirement: 200 },
+    isUnlocked: false,
+  },
+  {
+    id: "anim-stardust",
+    name: "Stardust",
+    description: "Magical particle effects",
+    type: "animation",
+    rarity: "epic",
+    unlockCondition: { type: "completions", requirement: 500 },
+    isUnlocked: false,
+  },
+]
+
+export const MOTIVATIONAL_MESSAGES = {
+  streakReminder: [
+    "Your streak is waiting for you",
+    "One habit away from a perfect day",
+    "Keep the momentum going",
+    "Your future self will thank you",
+  ],
+  almostDone: ["Just one more habit to complete today", "So close to a perfect day", "Finish strong - you've got this"],
+  streakSafe: ["Your streak is safe for now", "Great progress today - keep it up", "You're building something amazing"],
+  comeback: [
+    "Welcome back! Ready to restart?",
+    "Every expert was once a beginner",
+    "Today is a new opportunity",
+    "Small steps lead to big changes",
+  ],
+}

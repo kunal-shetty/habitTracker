@@ -12,9 +12,17 @@ interface HabitListProps {
   onToggleCompletion: (habitId: string, date?: string) => void
   onDeleteHabit: (habitId: string) => void
   onAddHabit: () => void
+  xpGained?: { amount: number; habitId: string } | null
 }
 
-export function HabitList({ habits, completions, onToggleCompletion, onDeleteHabit, onAddHabit }: HabitListProps) {
+export function HabitList({
+  habits,
+  completions,
+  onToggleCompletion,
+  onDeleteHabit,
+  onAddHabit,
+  xpGained,
+}: HabitListProps) {
   const today = getTodayString()
 
   if (habits.length === 0) {
@@ -60,7 +68,7 @@ export function HabitList({ habits, completions, onToggleCompletion, onDeleteHab
               >
                 🎉
               </motion.span>
-              <span className="font-medium">All habits completed!</span>
+              <span className="font-medium">Perfect day! All habits completed!</span>
               <motion.span
                 animate={{ rotate: [0, -10, 10, 0] }}
                 transition={{ duration: 0.5, repeat: 2 }}
@@ -88,6 +96,7 @@ export function HabitList({ habits, completions, onToggleCompletion, onDeleteHab
               completions={completions}
               onToggle={() => onToggleCompletion(habit.id, today)}
               onDelete={() => onDeleteHabit(habit.id)}
+              xpGained={xpGained}
             />
           </motion.div>
         ))}
