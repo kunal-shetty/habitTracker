@@ -2,7 +2,35 @@
 
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { LucideIcon, Trophy, Flame, Star, Target, Edit2, Camera, ChevronRight, Zap, Crown, Medal, Share2, Rocket, Footprints, Gem, Sparkles, Layers, Compass, TrendingUp, Award, Shield, Sword, Scroll, Calendar, Sunrise, Moon, RotateCcw } from "lucide-react"
+import {
+  Trophy,
+  Flame,
+  Star,
+  Target,
+  Edit2,
+  Camera,
+  ChevronRight,
+  Zap,
+  Crown,
+  Medal,
+  Share2,
+  Rocket,
+  Footprints,
+  Gem,
+  Sparkles,
+  Layers,
+  Compass,
+  TrendingUp,
+  Award,
+  Shield,
+  Sword,
+  Scroll,
+  Calendar,
+  Sunrise,
+  Moon,
+  RotateCcw,
+  Map,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useAuth } from "@/hooks/use-auth"
@@ -20,6 +48,12 @@ export function ProfileView({ stats, unlockedAchievements }: ProfileViewProps) {
   const [editName, setEditName] = useState(user?.name || "")
   const [showShareModal, setShowShareModal] = useState(false)
 
+  const safeLevel = Number.isNaN(stats.level) ? 1 : stats.level || 1
+  const safeTotalXp = Number.isNaN(stats.totalXp) ? 0 : stats.totalXp || 0
+  const safeCurrentStreak = Number.isNaN(stats.currentOverallStreak) ? 0 : stats.currentOverallStreak || 0
+  const safeLongestStreak = Number.isNaN(stats.longestOverallStreak) ? 0 : stats.longestOverallStreak || 0
+  const safeTotalCompletions = Number.isNaN(stats.totalCompletions) ? 0 : stats.totalCompletions || 0
+
   const handleSave = async () => {
     if (editName.trim()) {
       await updateProfile({ name: editName.trim() })
@@ -28,59 +62,57 @@ export function ProfileView({ stats, unlockedAchievements }: ProfileViewProps) {
   }
 
   const getRankTitle = () => {
-    if (stats.level >= 50) return { title: "Legendary Master", icon: Crown, color: "text-amber-500" }
-    if (stats.level >= 30) return { title: "Elite Champion", icon: Trophy, color: "text-purple-500" }
-    if (stats.level >= 20) return { title: "Habit Hero", icon: Medal, color: "text-blue-500" }
-    if (stats.level >= 10) return { title: "Rising Star", icon: Star, color: "text-emerald-500" }
+    if (safeLevel >= 50) return { title: "Legendary Master", icon: Crown, color: "text-amber-500" }
+    if (safeLevel >= 30) return { title: "Elite Champion", icon: Trophy, color: "text-purple-500" }
+    if (safeLevel >= 20) return { title: "Habit Hero", icon: Medal, color: "text-blue-500" }
+    if (safeLevel >= 10) return { title: "Rising Star", icon: Star, color: "text-emerald-500" }
     return { title: "Habit Starter", icon: Target, color: "text-muted-foreground" }
   }
 
   const rank = getRankTitle()
   const totalAchievements = ACHIEVEMENTS.length
   const completionRate =
-    stats.totalCompletions > 0 ? Math.round((stats.totalCompletions / (stats.totalCompletions + 50)) * 100) : 0
+    safeTotalCompletions > 0 ? Math.round((safeTotalCompletions / (safeTotalCompletions + 50)) * 100) : 0
 
   const profileStats = [
-    { label: "Current Streak", value: stats.currentOverallStreak, icon: Flame, color: "text-orange-500" },
-    { label: "Best Streak", value: stats.longestOverallStreak, icon: Zap, color: "text-amber-500" },
-    { label: "Total XP", value: stats.totalXp.toLocaleString(), icon: Star, color: "text-purple-500" },
-    { label: "Completions", value: stats.totalCompletions, icon: Target, color: "text-emerald-500" },
+    { label: "Current Streak", value: safeCurrentStreak, icon: Flame, color: "text-orange-500" },
+    { label: "Best Streak", value: safeLongestStreak, icon: Zap, color: "text-amber-500" },
+    { label: "Total XP", value: safeTotalXp.toLocaleString(), icon: Star, color: "text-purple-500" },
+    { label: "Completions", value: safeTotalCompletions, icon: Target, color: "text-emerald-500" },
   ]
 
-const ACHIEVEMENT_ICON_MAP = {
-  Rocket,
-  Footprints,
-  Flame,
-  Crown,
-  Zap,
-  Trophy,
-  Medal,
-  Star,
-  Gem,
-  Sparkles,
-  Layers,
-  Compass,
-  TrendingUp,
-  Award,
-  Shield,
-  Sword,
-  Scroll,
-  Map,
-  Calendar,
-  Sunrise,
-  Moon,
-  RotateCcw,
-} as const
+  const ACHIEVEMENT_ICON_MAP = {
+    Rocket,
+    Footprints,
+    Flame,
+    Crown,
+    Zap,
+    Trophy,
+    Medal,
+    Star,
+    Gem,
+    Sparkles,
+    Layers,
+    Compass,
+    TrendingUp,
+    Award,
+    Shield,
+    Sword,
+    Scroll,
+    Map,
+    Calendar,
+    Sunrise,
+    Moon,
+    RotateCcw,
+  } as const
 
-const generateAchievementIcon = (iconName: string) => {
-  const Icon = ACHIEVEMENT_ICON_MAP[iconName as keyof typeof ACHIEVEMENT_ICON_MAP]
+  const generateAchievementIcon = (iconName: string) => {
+    const Icon = ACHIEVEMENT_ICON_MAP[iconName as keyof typeof ACHIEVEMENT_ICON_MAP]
+    if (!Icon) return null
+    return <Icon className="h-5 w-5" />
+  }
 
-  if (!Icon) return null
-
-  return <Icon className="h-5 w-5" />
-}
-
-return (
+  return (
     <div className="space-y-6 pb-6">
       {/* Profile Header Card */}
       <motion.div
@@ -103,7 +135,7 @@ return (
             </button>
             {/* Level badge */}
             <div className="absolute -top-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-chart-1 text-xs font-bold text-white shadow-md">
-              {stats.level}
+              {safeLevel}
             </div>
           </div>
 
@@ -133,8 +165,6 @@ return (
             </p>
           </div>
         </div>
-
-        
       </motion.div>
 
       {/* Quick Stats Grid */}
@@ -185,21 +215,21 @@ return (
         {/* Recent achievements */}
         <div className="space-y-2">
           {unlockedAchievements.slice(0, 3).map((achievement) => {
-            const colors = RARITY_COLORS[achievement.rarity]
+            const colors = RARITY_COLORS[achievement.rarity] || RARITY_COLORS.common
             return (
               <div key={achievement.id} className="flex items-center gap-3 rounded-lg bg-muted/50 p-3">
                 <div
                   className="flex h-10 w-10 items-center justify-center rounded-lg text-xl"
                   style={{ backgroundColor: `${colors.bg}20` }}
                 >
-                 { generateAchievementIcon(achievement.icon) }
+                  {generateAchievementIcon(achievement.icon)}
                 </div>
                 <div className="flex-1">
                   <p className="font-medium">{achievement.title}</p>
                   <p className="text-xs text-muted-foreground">{achievement.description}</p>
                 </div>
                 <span className="text-xs font-medium" style={{ color: colors.text }}>
-                  +{achievement.xpReward} XP
+                  +{achievement.xpReward || 0} XP
                 </span>
               </div>
             )
@@ -225,7 +255,7 @@ return (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">Days active this month</span>
-            <span className="font-semibold">{Math.min(stats.currentOverallStreak, 30)}</span>
+            <span className="font-semibold">{Math.min(safeCurrentStreak, 30)}</span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">Consistency rate</span>
@@ -233,7 +263,7 @@ return (
           </div>
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">Habits evolved</span>
-            <span className="font-semibold">{Math.floor(stats.level / 5)}</span>
+            <span className="font-semibold">{Math.floor(safeLevel / 5)}</span>
           </div>
         </div>
       </motion.div>
@@ -266,17 +296,17 @@ return (
                   <div>
                     <p className="font-bold">{user?.name || "Habit Hero"}</p>
                     <p className="text-xs text-muted-foreground">
-                      Level {stats.level} {rank.title}
+                      Level {safeLevel} {rank.title}
                     </p>
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-2 text-center">
                   <div className="rounded-lg bg-background/80 p-2">
-                    <p className="text-lg font-bold text-orange-500">{stats.currentStreak}</p>
+                    <p className="text-lg font-bold text-orange-500">{safeCurrentStreak}</p>
                     <p className="text-[10px] text-muted-foreground">Day Streak</p>
                   </div>
                   <div className="rounded-lg bg-background/80 p-2">
-                    <p className="text-lg font-bold text-purple-500">{stats.totalXp.toLocaleString()}</p>
+                    <p className="text-lg font-bold text-purple-500">{safeTotalXp.toLocaleString()}</p>
                     <p className="text-[10px] text-muted-foreground">Total XP</p>
                   </div>
                   <div className="rounded-lg bg-background/80 p-2">

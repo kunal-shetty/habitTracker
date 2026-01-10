@@ -6,6 +6,7 @@ import { Plus, Calendar, BarChart3, Settings, Home, Scroll, User, Trophy } from 
 import { Button } from "@/components/ui/button"
 import { useHabits } from "@/hooks/use-habits"
 import { useOnboarding } from "@/hooks/use-onboarding"
+import { usePremium, FREE_HABIT_LIMIT } from "@/hooks/use-premium"
 import { HabitList } from "./habit-list"
 import { DashboardHeader } from "./dashboard-header"
 import { AddHabitSheet } from "./add-habit-sheet"
@@ -19,7 +20,7 @@ import { LeaderboardView } from "./leaderboard-view"
 import { EvolutionModal } from "./evolution-modal"
 import { ComebackModal } from "./comeback-modal"
 import { NotificationNudge } from "./notification-nudge"
-import { saveHabits, saveCompletions, saveStats } from "@/lib/storage"
+import { PremiumUpgradeModal } from "./premium-upgrade-modal"
 import { ACHIEVEMENTS } from "@/lib/constants"
 
 type TabType = "home" | "quests" | "calendar" | "stats" | "profile" | "settings"
@@ -28,6 +29,7 @@ export function HabitDashboard() {
   const [activeTab, setActiveTab] = useState<TabType>("home")
   const [showAddHabit, setShowAddHabit] = useState(false)
   const [showLeaderboard, setShowLeaderboard] = useState(false)
+  const [showPremiumModal, setShowPremiumModal] = useState(false)
   const {
     habits,
     completions,
@@ -44,19 +46,35 @@ export function HabitDashboard() {
     claimQuestReward,
   } = useHabits()
   const { resetOnboarding } = useOnboarding()
+  const { isPremium, upgradeToPremium, canAddHabit, habitLimit } = usePremium()
 
-  const unlockedAchievements = ACHIEVEMENTS.filter((a) => stats.achievements.includes(a.id))
+  const activeHabits = habits.filter((h) => !h.archived)
+  const unlockedAchievements = ACHIEVEMENTS.filter((a) => (stats.achievements || []).includes(a.id))
+
+  const completedUnclaimedQuests = (stats.currentDailyQuests || []).filter((q) => q.isCompleted).length
 
   const handleClearData = useCallback(() => {
-  localStorage.clear()
-  window.location.reload()
-}, [])
-
+    localStorage.clear()
+    window.location.reload()
+  }, [])
 
   const handleResetOnboarding = useCallback(() => {
     resetOnboarding()
     window.location.reload()
   }, [resetOnboarding])
+
+  const handleAddHabitClick = () => {
+    if (canAddHabit(activeHabits.length)) {
+      setShowAddHabit(true)
+    } else {
+      setShowPremiumModal(true)
+    }
+  }
+
+  const handleUpgrade = () => {
+    upgradeToPremium()
+    setShowPremiumModal(false)
+  }
 
   if (!isLoaded) {
     return (
@@ -73,8 +91,6 @@ export function HabitDashboard() {
     { id: "stats" as const, icon: BarChart3, label: "Stats" },
     { id: "profile" as const, icon: User, label: "Profile" },
   ]
-
-  const completedUnclaimedQuests = stats.currentDailyQuests.filter((q) => q.isCompleted).length
 
   return (
     <div className="flex h-dvh flex-col bg-background safe-top">
@@ -110,11 +126,11 @@ export function HabitDashboard() {
               className="p-4"
             >
               <HabitList
-                habits={habits.filter((h) => !h.archived)}
+                habits={activeHabits}
                 completions={completions}
                 onToggleCompletion={toggleCompletion}
                 onDeleteHabit={deleteHabit}
-                onAddHabit={() => setShowAddHabit(true)}
+                onAddHabit={handleAddHabitClick}
                 xpGained={xpGained}
               />
             </motion.div>
@@ -129,12 +145,12 @@ export function HabitDashboard() {
               className="p-4"
             >
               <QuestsView
-                dailyQuests={stats.currentDailyQuests}
+                dailyQuests={stats.currentDailyQuests || []}
                 weeklyChallenge={stats.currentWeeklyChallenge}
                 monthlyTheme={stats.currentMonthlyTheme}
                 onClaimReward={claimQuestReward}
-                questsCompleted={stats.questsCompleted}
-                graceTokens={stats.availableGraceTokens}
+                questsCompleted={stats.questsCompleted || 0}
+                graceTokens={stats.availableGraceTokens || 0}
               />
             </motion.div>
           )}
@@ -147,11 +163,7 @@ export function HabitDashboard() {
               exit={{ opacity: 0, y: -10 }}
               className="p-4"
             >
-              <CalendarView
-                habits={habits.filter((h) => !h.archived)}
-                completions={completions}
-                onToggleCompletion={toggleCompletion}
-              />
+              <CalendarView habits={activeHabits} completions={completions} onToggleCompletion={toggleCompletion} />
             </motion.div>
           )}
 
@@ -211,7 +223,13 @@ export function HabitDashboard() {
               exit={{ opacity: 0, y: -10 }}
               className="p-4"
             >
-              <SettingsView onResetOnboarding={handleResetOnboarding} onClearData={handleClearData} stats={stats} />
+              <SettingsView
+                onResetOnboarding={handleResetOnboarding}
+                onClearData={handleClearData}
+                stats={stats}
+                isPremium={isPremium}
+                onUpgrade={() => setShowPremiumModal(true)}
+              />
             </motion.div>
           )}
         </AnimatePresence>
@@ -224,7 +242,7 @@ export function HabitDashboard() {
           animate={{ scale: 1 }}
           transition={{ type: "spring", delay: 0.3 }}
         >
-          <Button size="lg" className="h-14 w-14 rounded-full shadow-lg" onClick={() => setShowAddHabit(true)}>
+          <Button size="lg" className="h-14 w-14 rounded-full shadow-lg" onClick={handleAddHabitClick}>
             <Plus className="h-6 w-6" />
             <span className="sr-only">Add habit</span>
           </Button>
@@ -271,7 +289,26 @@ export function HabitDashboard() {
         </div>
       </nav>
 
-      <AddHabitSheet isOpen={showAddHabit} onClose={() => setShowAddHabit(false)} onAdd={addHabit} />
+      <AddHabitSheet
+        isOpen={showAddHabit}
+        onClose={() => setShowAddHabit(false)}
+        onAdd={addHabit}
+        currentHabitCount={activeHabits.length}
+        habitLimit={habitLimit}
+        isPremium={isPremium}
+        onUpgrade={() => {
+          setShowAddHabit(false)
+          setShowPremiumModal(true)
+        }}
+      />
+
+      <PremiumUpgradeModal
+        isOpen={showPremiumModal}
+        onClose={() => setShowPremiumModal(false)}
+        onUpgrade={handleUpgrade}
+        currentHabits={activeHabits.length}
+        habitLimit={FREE_HABIT_LIMIT}
+      />
 
       <AchievementToast achievementId={newAchievement} onClose={clearNewAchievement} />
 
@@ -289,7 +326,7 @@ export function HabitDashboard() {
         <ComebackModal
           isOpen={true}
           onClose={() => {}}
-          missedDays={stats.comebackData.missedDays}
+          missedDays={stats.comebackData.missedDays || 0}
           onStartComeback={() => {}}
         />
       )}

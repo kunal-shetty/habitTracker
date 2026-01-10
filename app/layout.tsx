@@ -22,6 +22,7 @@ export const metadata: Metadata = {
     shortcut: "/favicon.ico",
     apple: "/favicon.ico",
   },
+    generator: 'v0.app'
 }
 
 export const viewport: Viewport = {

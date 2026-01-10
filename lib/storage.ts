@@ -9,6 +9,7 @@ const STORAGE_KEYS = {
   AUTH: "habit-tracker-auth",
   QUESTS: "habit-tracker-quests",
   GRACE_TOKENS: "habit-tracker-grace-tokens",
+  PREMIUM: "habit-tracker-isPremium",
 }
 
 function safeGetItem<T>(key: string, defaultValue: T): T {
@@ -150,7 +151,7 @@ export function saveOnboardingState(state: OnboardingState): void {
 
 // Theme
 export function getTheme(): "light" | "dark" | "system" {
-  return safeGetItem<"light" | "dark" | "system">(STORAGE_KEYS.THEME, "system")
+  return safeGetItem<"light" | "dark" | "system">(STORAGE_KEYS.THEME, "light")
 }
 
 export function saveTheme(theme: "light" | "dark" | "system"): void {
@@ -193,6 +194,14 @@ export function getGraceTokens(): GraceToken[] {
 
 export function saveGraceTokens(tokens: GraceToken[]): void {
   safeSetItem(STORAGE_KEYS.GRACE_TOKENS, tokens)
+}
+
+export function getIsPremium(): boolean {
+  return safeGetItem<boolean>(STORAGE_KEYS.PREMIUM, false)
+}
+
+export function setIsPremium(isPremium: boolean): void {
+  safeSetItem(STORAGE_KEYS.PREMIUM, isPremium)
 }
 
 export function clearAllData(): void {

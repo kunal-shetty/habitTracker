@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Check, Sword } from "lucide-react"
+import { Check, Sword, Lock, Crown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -29,11 +29,23 @@ interface AddHabitSheetProps {
       | "isMastered"
     >,
   ) => void
+  currentHabitCount: number
+  habitLimit: number
+  isPremium: boolean
+  onUpgrade?: () => void
 }
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
-export function AddHabitSheet({ isOpen, onClose, onAdd }: AddHabitSheetProps) {
+export function AddHabitSheet({
+  isOpen,
+  onClose,
+  onAdd,
+  currentHabitCount,
+  habitLimit,
+  isPremium,
+  onUpgrade,
+}: AddHabitSheetProps) {
   const [step, setStep] = useState(1)
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
@@ -46,6 +58,9 @@ export function AddHabitSheet({ isOpen, onClose, onAdd }: AddHabitSheetProps) {
   const [reminderEnabled, setReminderEnabled] = useState(false)
   const [reminderTime, setReminderTime] = useState("09:00")
   const [difficulty, setDifficulty] = useState<HabitDifficulty>("medium")
+
+  const canAddMoreHabits = isPremium || currentHabitCount < habitLimit
+  const habitsRemaining = habitLimit - currentHabitCount
 
   const resetForm = () => {
     setStep(1)
@@ -68,7 +83,7 @@ export function AddHabitSheet({ isOpen, onClose, onAdd }: AddHabitSheetProps) {
   }
 
   const handleSubmit = () => {
-    if (!name.trim()) return
+    if (!name.trim() || !canAddMoreHabits) return
 
     onAdd({
       name: name.trim(),
@@ -139,11 +154,34 @@ export function AddHabitSheet({ isOpen, onClose, onAdd }: AddHabitSheetProps) {
                 variant="ghost"
                 size="sm"
                 onClick={step === 3 ? handleSubmit : () => setStep(step + 1)}
-                disabled={!canProceed()}
+                disabled={!canProceed() || (step === 3 && !canAddMoreHabits)}
               >
                 {step === 3 ? "Done" : "Next"}
               </Button>
             </div>
+
+            {!isPremium && (
+              <div className="mx-4 mt-3 flex items-center justify-between rounded-lg bg-amber-500/10 px-3 py-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <Lock className="h-4 w-4 text-amber-600" />
+                  <span className="text-amber-700 dark:text-amber-400">
+                    {habitsRemaining > 0 ? (
+                      <>
+                        {habitsRemaining} habit{habitsRemaining !== 1 ? "s" : ""} remaining
+                      </>
+                    ) : (
+                      "Habit limit reached"
+                    )}
+                  </span>
+                </div>
+                {onUpgrade && (
+                  <Button size="sm" variant="ghost" className="h-7 gap-1 text-amber-600" onClick={onUpgrade}>
+                    <Crown className="h-3 w-3" />
+                    Upgrade
+                  </Button>
+                )}
+              </div>
+            )}
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-4">
@@ -445,9 +483,9 @@ export function AddHabitSheet({ isOpen, onClose, onAdd }: AddHabitSheetProps) {
                 <Button
                   className="flex-1"
                   onClick={step === 3 ? handleSubmit : () => setStep(step + 1)}
-                  disabled={!canProceed()}
+                  disabled={!canProceed() || (step === 3 && !canAddMoreHabits)}
                 >
-                  {step === 3 ? "Create Habit" : "Continue"}
+                  {step === 3 ? (canAddMoreHabits ? "Create Habit" : "Upgrade to Add More") : "Continue"}
                 </Button>
               </div>
             </div>

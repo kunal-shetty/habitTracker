@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { Clock, Zap, Shield, CheckCircle, Gift } from "lucide-react"
+import { Clock, Zap, Shield, Gift } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import type { Quest } from "@/lib/types"
@@ -14,9 +14,18 @@ interface QuestCardProps {
 }
 
 export function QuestCard({ quest, onClaim }: QuestCardProps) {
-  const difficultyConfig = DIFFICULTY_CONFIG[quest.difficulty]
-  const progressPercent = Math.min((quest.progress / quest.requirement.count) * 100, 100)
-  const timeLeft = formatDistanceToNow(new Date(quest.expiresAt), { addSuffix: true })
+  const difficultyConfig = DIFFICULTY_CONFIG[quest.difficulty] || DIFFICULTY_CONFIG.medium
+  const safeProgress = Number.isNaN(quest.progress) ? 0 : quest.progress || 0
+  const safeRequirement = Number.isNaN(quest.requirement.count) ? 1 : quest.requirement.count || 1
+  const progressPercent = Math.min((safeProgress / safeRequirement) * 100, 100)
+  const safeXpReward = Number.isNaN(quest.xpReward) ? 0 : quest.xpReward || 0
+
+  let timeLeft = "soon"
+  try {
+    timeLeft = formatDistanceToNow(new Date(quest.expiresAt), { addSuffix: true })
+  } catch {
+    timeLeft = "soon"
+  }
 
   return (
     <motion.div
@@ -43,7 +52,7 @@ export function QuestCard({ quest, onClaim }: QuestCardProps) {
       <div className="mt-4">
         <div className="mb-1 flex items-center justify-between text-sm">
           <span className="text-muted-foreground">
-            {quest.progress}/{quest.requirement.count}
+            {safeProgress}/{safeRequirement}
           </span>
           <span className="text-muted-foreground">{Math.round(progressPercent)}%</span>
         </div>
@@ -56,11 +65,11 @@ export function QuestCard({ quest, onClaim }: QuestCardProps) {
           {/* XP reward */}
           <div className="flex items-center gap-1 text-sm">
             <Zap className="h-4 w-4 text-amber-500" />
-            <span className="font-medium text-amber-600">{quest.xpReward}</span>
+            <span className="font-medium text-amber-600">{safeXpReward}</span>
           </div>
 
           {/* Grace token reward */}
-          {quest.graceTokenReward && (
+          {quest.graceTokenReward && quest.graceTokenReward > 0 && (
             <div className="flex items-center gap-1 text-sm">
               <Shield className="h-4 w-4 text-blue-500" />
               <span className="font-medium text-blue-600">{quest.graceTokenReward}</span>
@@ -81,17 +90,6 @@ export function QuestCard({ quest, onClaim }: QuestCardProps) {
           </div>
         )}
       </div>
-
-      {/* Completed overlay */}
-      {quest.isCompleted && (
-        <motion.div
-          className="absolute inset-0 flex items-center justify-center bg-green-500/10"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-        >
-          <CheckCircle className="h-8 w-8 text-green-500" />
-        </motion.div>
-      )}
     </motion.div>
   )
 }

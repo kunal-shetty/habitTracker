@@ -82,14 +82,16 @@ export function useHabits() {
     const loadedCompletions = getCompletions()
     const loadedStats = getStats()
 
-    const updatedQuests = generateDailyQuests(loadedStats.currentDailyQuests)
+    const updatedQuests = generateDailyQuests(loadedStats.currentDailyQuests || [])
 
     let weeklyChallenge = loadedStats.currentWeeklyChallenge
     if (!weeklyChallenge || new Date(weeklyChallenge.expiresAt) < new Date()) {
       weeklyChallenge = generateWeeklyChallenge()
     }
 
-    const { isComeback, daysMissed } = checkComebackStatus(loadedStats.comebackData.lastActiveDate)
+    const { isComeback, daysMissed } = checkComebackStatus(
+      loadedStats.comebackData?.lastActiveDate || new Date().toISOString(),
+    )
 
     const finalStats = {
       ...loadedStats,
@@ -102,7 +104,7 @@ export function useHabits() {
       },
     }
 
-    if (isComeback && !loadedStats.comebackData.isInComebackMode) {
+    if (isComeback && !loadedStats.comebackData?.isInComebackMode) {
       finalStats.currentDailyQuests = [
         ...generateComebackQuests(daysMissed),
         ...finalStats.currentDailyQuests.slice(0, 1),
@@ -122,7 +124,7 @@ export function useHabits() {
       const newAchievements: string[] = []
 
       ACHIEVEMENTS.forEach((achievement) => {
-        if (currentStats.achievements.includes(achievement.id)) return
+        if (currentStats.achievements?.includes(achievement.id)) return
 
         let unlocked = false
 
@@ -134,13 +136,13 @@ export function useHabits() {
             unlocked = currentCompletions.length >= achievement.requirement
             break
           case "streak":
-            unlocked = currentStats.currentOverallStreak >= achievement.requirement
+            unlocked = (currentStats.currentOverallStreak || 0) >= achievement.requirement
             break
           case "level":
-            unlocked = currentStats.level >= achievement.requirement
+            unlocked = (currentStats.level || 1) >= achievement.requirement
             break
           case "quest":
-            unlocked = currentStats.questsCompleted >= achievement.requirement
+            unlocked = (currentStats.questsCompleted || 0) >= achievement.requirement
             break
           case "special":
             if (achievement.id === "habit-master") {
@@ -163,9 +165,10 @@ export function useHabits() {
     (newHabits: Habit[], newCompletions: HabitCompletion[], xpEarned?: number) => {
       const overallStreak = calculateOverallStreak(newHabits, newCompletions)
       const points = calculatePoints(newCompletions, overallStreak)
-      const newTotalXp = stats.totalXp + (xpEarned || 0)
+      const safeXpEarned = Number.isNaN(xpEarned) || xpEarned === undefined ? 0 : xpEarned
+      const newTotalXp = (stats.totalXp || 0) + safeXpEarned
       const newLevel = calculateUserLevel(newTotalXp)
-      const oldLevel = stats.level
+      const oldLevel = stats.level || 1
 
       if (newLevel > oldLevel) {
         setLevelUpData({ oldLevel, newLevel })
@@ -176,13 +179,13 @@ export function useHabits() {
         setStreakMilestone(ACHIEVEMENTS.find((a) => a.id === milestone.achievement) || null)
       }
 
-      const updatedQuests = stats.currentDailyQuests.map((q) =>
+      const updatedQuests = (stats.currentDailyQuests || []).map((q) =>
         updateQuestProgress(q, newHabits, newCompletions, stats),
       )
 
       // Check for newly completed quests
       const newlyCompleted = updatedQuests.find(
-        (q) => q.isCompleted && !stats.currentDailyQuests.find((oq) => oq.id === q.id)?.isCompleted,
+        (q) => q.isCompleted && !(stats.currentDailyQuests || []).find((oq) => oq.id === q.id)?.isCompleted,
       )
       if (newlyCompleted) {
         setQuestCompleted(newlyCompleted)
@@ -193,20 +196,21 @@ export function useHabits() {
       const allCompletedToday = activeHabits.every((h) =>
         newCompletions.some((c) => c.habitId === h.id && c.date === today && c.count >= h.targetCount),
       )
-      const newPerfectDays = allCompletedToday && activeHabits.length > 0 ? stats.perfectDays + 1 : stats.perfectDays
+      const newPerfectDays =
+        allCompletedToday && activeHabits.length > 0 ? (stats.perfectDays || 0) + 1 : stats.perfectDays || 0
 
       const updatedStats: UserStats = {
         ...stats,
         totalCompletions: newCompletions.length,
         currentOverallStreak: overallStreak,
-        longestOverallStreak: Math.max(stats.longestOverallStreak, overallStreak),
+        longestOverallStreak: Math.max(stats.longestOverallStreak || 0, overallStreak),
         totalPoints: points,
         level: newLevel,
         totalXp: newTotalXp,
         streakMultiplier: Math.min(1 + overallStreak * 0.1, 5),
         perfectDays: newPerfectDays,
         currentDailyQuests: updatedQuests,
-        questsCompleted: stats.questsCompleted + (newlyCompleted ? 1 : 0),
+        questsCompleted: (stats.questsCompleted || 0) + (newlyCompleted ? 1 : 0),
         comebackData: {
           ...stats.comebackData,
           lastActiveDate: new Date().toISOString(),
@@ -217,7 +221,7 @@ export function useHabits() {
       // Check for new achievements
       const newAchievements = checkAchievements(newHabits, newCompletions, updatedStats)
       if (newAchievements.length > 0) {
-        updatedStats.achievements = [...updatedStats.achievements, ...newAchievements]
+        updatedStats.achievements = [...(updatedStats.achievements || []), ...newAchievements]
         setNewAchievement(newAchievements[0])
       }
 
@@ -290,43 +294,42 @@ export function useHabits() {
       const existingCompletion = getCompletionForHabitOnDate(completions, habitId, targetDate)
       const streak = calculateStreak(completions, habit)
 
+      if (existingCompletion && existingCompletion.count >= habit.targetCount) {
+        return // Already completed, do nothing
+      }
+
       let newCompletions: HabitCompletion[]
       let xpEarned = 0
       let updatedHabit = habit
 
       if (existingCompletion) {
-        if (existingCompletion.count >= habit.targetCount) {
-          // Reset to 0
-          newCompletions = completions.filter((c) => c.id !== existingCompletion.id)
-        } else {
-          // Increment count
-          const { totalXp, streakMultiplier, bonusXp } = calculateXpForCompletion(habit, streak)
-          xpEarned = totalXp
+        // Increment count (already checked it's not fully completed above)
+        const { totalXp, streakMultiplier, bonusXp } = calculateXpForCompletion(habit, streak)
+        xpEarned = Number.isNaN(totalXp) ? 0 : totalXp
 
-          newCompletions = completions.map((c) =>
-            c.id === existingCompletion.id
-              ? {
-                  ...c,
-                  count: c.count + 1,
-                  completedAt: new Date().toISOString(),
-                  xpEarned: totalXp,
-                  streakMultiplier,
-                  bonusXp,
-                }
-              : c,
-          )
+        newCompletions = completions.map((c) =>
+          c.id === existingCompletion.id
+            ? {
+                ...c,
+                count: c.count + 1,
+                completedAt: new Date().toISOString(),
+                xpEarned: xpEarned,
+                streakMultiplier: Number.isNaN(streakMultiplier) ? 1 : streakMultiplier,
+                bonusXp: Number.isNaN(bonusXp) ? 0 : bonusXp,
+              }
+            : c,
+        )
 
-          if (existingCompletion.count + 1 >= habit.targetCount) {
-            updatedHabit = updateHabitAfterCompletion(habit, streak)
-            if (updatedHabit.evolutionStage !== habit.evolutionStage) {
-              setHabitEvolution({ habit: updatedHabit, newStage: updatedHabit.evolutionStage })
-            }
+        if (existingCompletion.count + 1 >= habit.targetCount) {
+          updatedHabit = updateHabitAfterCompletion(habit, streak)
+          if (updatedHabit.evolutionStage !== habit.evolutionStage) {
+            setHabitEvolution({ habit: updatedHabit, newStage: updatedHabit.evolutionStage })
           }
         }
       } else {
         // Create new completion
         const { totalXp, streakMultiplier, bonusXp } = calculateXpForCompletion(habit, streak)
-        xpEarned = totalXp
+        xpEarned = Number.isNaN(totalXp) ? 0 : totalXp
 
         const newCompletion: HabitCompletion = {
           id: generateId(),
@@ -334,9 +337,9 @@ export function useHabits() {
           date: targetDate,
           count: 1,
           completedAt: new Date().toISOString(),
-          xpEarned: totalXp,
-          streakMultiplier,
-          bonusXp,
+          xpEarned: xpEarned,
+          streakMultiplier: Number.isNaN(streakMultiplier) ? 1 : streakMultiplier,
+          bonusXp: Number.isNaN(bonusXp) ? 0 : bonusXp,
         }
         newCompletions = [...completions, newCompletion]
 
@@ -366,13 +369,15 @@ export function useHabits() {
   )
 
   const useGraceToken = useCallback(() => {
-    if (stats.availableGraceTokens <= 0) return false
+    if ((stats.availableGraceTokens || 0) <= 0) return false
 
     const newStats = {
       ...stats,
-      availableGraceTokens: stats.availableGraceTokens - 1,
-      graceTokens: stats.graceTokens.map((t, i) =>
-        i === stats.graceTokens.findIndex((token) => !token.usedAt) ? { ...t, usedAt: new Date().toISOString() } : t,
+      availableGraceTokens: (stats.availableGraceTokens || 0) - 1,
+      graceTokens: (stats.graceTokens || []).map((t, i) =>
+        i === (stats.graceTokens || []).findIndex((token) => !token.usedAt)
+          ? { ...t, usedAt: new Date().toISOString() }
+          : t,
       ),
     }
 
@@ -383,17 +388,20 @@ export function useHabits() {
 
   const claimQuestReward = useCallback(
     (questId: string) => {
-      const quest = stats.currentDailyQuests.find((q) => q.id === questId)
+      const quest = (stats.currentDailyQuests || []).find((q) => q.id === questId)
       if (!quest || !quest.isCompleted) return
 
       const newStats = { ...stats }
 
-      // Award XP
-      newStats.totalXp += quest.xpReward
+      // Award XP with NaN protection
+      const xpReward = Number.isNaN(quest.xpReward) ? 0 : quest.xpReward || 0
+      newStats.totalXp = (newStats.totalXp || 0) + xpReward
       newStats.level = calculateUserLevel(newStats.totalXp)
 
+      newStats.totalPoints = (newStats.totalPoints || 0) + Math.round(xpReward / 2)
+
       // Award grace tokens if any
-      if (quest.graceTokenReward) {
+      if (quest.graceTokenReward && quest.graceTokenReward > 0) {
         const newTokens: GraceToken[] = Array(quest.graceTokenReward)
           .fill(null)
           .map(() => ({
@@ -401,13 +409,15 @@ export function useHabits() {
             earnedAt: new Date().toISOString(),
             source: "quest" as const,
           }))
-        newStats.graceTokens = [...newStats.graceTokens, ...newTokens]
-        newStats.availableGraceTokens += quest.graceTokenReward
+        newStats.graceTokens = [...(newStats.graceTokens || []), ...newTokens]
+        newStats.availableGraceTokens = (newStats.availableGraceTokens || 0) + quest.graceTokenReward
       }
 
       // Remove claimed quest and generate new one
-      newStats.currentDailyQuests = newStats.currentDailyQuests.filter((q) => q.id !== questId)
+      newStats.currentDailyQuests = (newStats.currentDailyQuests || []).filter((q) => q.id !== questId)
       newStats.currentDailyQuests = generateDailyQuests(newStats.currentDailyQuests)
+
+      newStats.questsCompleted = (newStats.questsCompleted || 0) + 1
 
       setStats(newStats)
       saveStats(newStats)

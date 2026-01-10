@@ -28,14 +28,19 @@ interface SettingsViewProps {
   onResetOnboarding: () => void
   onClearData: () => void
   stats?: UserStats
+  isPremium?: boolean
+  onUpgrade?: () => void
 }
 
-export function SettingsView({ onResetOnboarding, onClearData, stats }: SettingsViewProps) {
+export function SettingsView({ onResetOnboarding, onClearData, stats, isPremium, onUpgrade }: SettingsViewProps) {
   const { theme, setTheme } = useTheme()
   const { user, isAuthenticated, logout } = useAuth()
   const [mounted, setMounted] = useState(false)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
   const [notificationsEnabled, setNotificationsEnabled] = useState(false)
+
+  const safeLevel = Number.isNaN(stats?.level) ? 1 : stats?.level || 1
+  const safeTotalXp = Number.isNaN(stats?.totalXp) ? 0 : stats?.totalXp || 0
 
   useEffect(() => {
     setMounted(true)
@@ -74,7 +79,7 @@ export function SettingsView({ onResetOnboarding, onClearData, stats }: Settings
                 <h3 className="font-semibold">{user.name || "User"}</h3>
                 <p className="text-sm text-muted-foreground">{user.email}</p>
               </div>
-              {stats && stats.level >= 20 && (
+              {isPremium && (
                 <div className="flex items-center gap-1 rounded-full bg-amber-500/20 px-2 py-1 text-xs font-medium text-amber-600">
                   <Crown className="h-3 w-3" />
                   Pro
@@ -95,12 +100,14 @@ export function SettingsView({ onResetOnboarding, onClearData, stats }: Settings
       )}
 
       {/* Premium Upsell (if not premium) */}
-      {stats && stats.level < 20 && (
-        <motion.div
-          className="relative overflow-hidden rounded-xl bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-amber-500/20 p-4"
+      {!isPremium && (
+        <motion.button
+          className="relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-amber-500/20 p-4 text-left"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
+          onClick={onUpgrade}
+          whileTap={{ scale: 0.98 }}
         >
           <div className="absolute -right-4 -top-4 h-20 w-20 rounded-full bg-amber-500/20 blur-2xl" />
           <div className="relative flex items-center gap-3">
@@ -113,7 +120,7 @@ export function SettingsView({ onResetOnboarding, onClearData, stats }: Settings
             </div>
             <ChevronRight className="h-5 w-5 text-muted-foreground" />
           </div>
-        </motion.div>
+        </motion.button>
       )}
 
       {/* Appearance */}

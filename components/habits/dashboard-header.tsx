@@ -17,17 +17,24 @@ interface DashboardHeaderProps {
 
 export function DashboardHeader({ stats, onOpenLeaderboard }: DashboardHeaderProps) {
   const [showLevelUp, setShowLevelUp] = useState(false)
-  const prevLevelRef = useRef(stats.level)
+  const safeLevel = Number.isNaN(stats.level) ? 1 : stats.level || 1
+  const safeTotalXp = Number.isNaN(stats.totalXp) ? 0 : stats.totalXp || 0
+  const safeStreak = Number.isNaN(stats.currentOverallStreak) ? 0 : stats.currentOverallStreak || 0
+  const safeStreakMultiplier = Number.isNaN(stats.streakMultiplier) ? 1 : stats.streakMultiplier || 1
+  const safeGraceTokens = Number.isNaN(stats.availableGraceTokens) ? 0 : stats.availableGraceTokens || 0
+  const safePrestigeLevel = Number.isNaN(stats.prestigeLevel) ? 0 : stats.prestigeLevel || 0
+
+  const prevLevelRef = useRef(safeLevel)
   const today = new Date()
   const greeting = getGreeting()
-  const progressToNextLevel = getProgressToNextLevel(stats.totalXp, stats.level)
+  const progressToNextLevel = getProgressToNextLevel(safeTotalXp, safeLevel)
 
   useEffect(() => {
-    if (stats.level > prevLevelRef.current) {
+    if (safeLevel > prevLevelRef.current) {
       setShowLevelUp(true)
     }
-    prevLevelRef.current = stats.level
-  }, [stats.level])
+    prevLevelRef.current = safeLevel
+  }, [safeLevel])
 
   function getGreeting() {
     const hour = today.getHours()
@@ -41,11 +48,12 @@ export function DashboardHeader({ stats, onOpenLeaderboard }: DashboardHeaderPro
     const nextLevelThreshold = LEVEL_THRESHOLDS[level] || LEVEL_THRESHOLDS[LEVEL_THRESHOLDS.length - 1]
     const progressPoints = xp - currentLevelThreshold
     const neededPoints = nextLevelThreshold - currentLevelThreshold
+    if (neededPoints <= 0) return 1
     return Math.min(progressPoints / neededPoints, 1)
   }
 
-  const nextLevelXp = LEVEL_THRESHOLDS[stats.level] || LEVEL_THRESHOLDS[LEVEL_THRESHOLDS.length - 1]
-  const xpToNextLevel = nextLevelXp - stats.totalXp
+  const nextLevelXp = LEVEL_THRESHOLDS[safeLevel] || LEVEL_THRESHOLDS[LEVEL_THRESHOLDS.length - 1]
+  const xpToNextLevel = Math.max(0, nextLevelXp - safeTotalXp)
 
   return (
     <>
@@ -57,7 +65,7 @@ export function DashboardHeader({ stats, onOpenLeaderboard }: DashboardHeaderPro
             <h1 className="text-2xl font-bold text-foreground">{greeting}</h1>
           </div>
           <div className="flex items-center gap-2">
-            <GraceTokenIndicator count={stats.availableGraceTokens} compact />
+            <GraceTokenIndicator count={safeGraceTokens} compact />
             {onOpenLeaderboard && (
               <motion.button
                 onClick={onOpenLeaderboard}
@@ -84,15 +92,15 @@ export function DashboardHeader({ stats, onOpenLeaderboard }: DashboardHeaderPro
               </div>
               <div>
                 <div className="flex items-baseline gap-1">
-                  <StreakFlame streak={stats.currentOverallStreak} size="md" />
+                  <StreakFlame streak={safeStreak} size="md" />
                 </div>
                 <p className="text-xs text-muted-foreground">Day streak</p>
               </div>
             </div>
-            {stats.currentOverallStreak > 0 && (
+            {safeStreak > 0 && (
               <div className="flex items-center gap-1 rounded bg-accent/30 px-2 py-1 text-xs">
                 <TrendingUp className="h-3 w-3 text-orange-500" />
-                <span className="font-semibold text-orange-600">{stats.streakMultiplier.toFixed(1)}x</span>
+                <span className="font-semibold text-orange-600">{safeStreakMultiplier.toFixed(1)}x</span>
                 <span className="text-muted-foreground">XP bonus</span>
               </div>
             )}
@@ -109,17 +117,17 @@ export function DashboardHeader({ stats, onOpenLeaderboard }: DashboardHeaderPro
             </div>
             <div className="flex-1">
               <div className="flex items-baseline gap-1">
-                <p className="text-2xl font-bold text-foreground">{stats.level}</p>
+                <p className="text-2xl font-bold text-foreground">{safeLevel}</p>
                 <p className="text-xs text-muted-foreground">Level</p>
-                {stats.prestigeLevel > 0 && (
-                  <span className="rounded bg-amber-500 px-1 text-xs font-bold text-white">P{stats.prestigeLevel}</span>
+                {safePrestigeLevel > 0 && (
+                  <span className="rounded bg-amber-500 px-1 text-xs font-bold text-white">P{safePrestigeLevel}</span>
                 )}
               </div>
               <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-primary/20">
                 <motion.div
                   className="h-full rounded-full bg-primary"
                   initial={{ width: 0 }}
-                  animate={{ width: `${progressToNextLevel * 100}%` }}
+                  animate={{ width: `${Math.min(progressToNextLevel * 100, 100)}%` }}
                   transition={{ duration: 0.5, ease: "easeOut" }}
                 />
               </div>
@@ -135,14 +143,14 @@ export function DashboardHeader({ stats, onOpenLeaderboard }: DashboardHeaderPro
         >
           <div className="flex items-center gap-2">
             <Zap className="h-4 w-4 text-amber-500" />
-            <span className="text-sm font-semibold text-amber-600">{stats.totalXp.toLocaleString()} XP</span>
+            <span className="text-sm font-semibold text-amber-600">{safeTotalXp.toLocaleString()} XP</span>
           </div>
           <span className="text-xs text-muted-foreground">
-            {xpToNextLevel.toLocaleString()} to level {stats.level + 1}
+            {xpToNextLevel.toLocaleString()} to level {safeLevel + 1}
           </span>
         </motion.div>
 
-        {stats.comebackData.isInComebackMode && (
+        {stats.comebackData?.isInComebackMode && (
           <motion.div
             className="mt-3 flex items-center gap-2 rounded-lg bg-amber-500/10 px-3 py-2 text-amber-700 dark:text-amber-400"
             initial={{ opacity: 0, y: 10 }}
@@ -154,7 +162,7 @@ export function DashboardHeader({ stats, onOpenLeaderboard }: DashboardHeaderPro
         )}
       </header>
 
-      <LevelUpModal level={stats.level} isOpen={showLevelUp} onClose={() => setShowLevelUp(false)} />
+      <LevelUpModal level={safeLevel} isOpen={showLevelUp} onClose={() => setShowLevelUp(false)} />
     </>
   )
 }
