@@ -326,8 +326,8 @@ export function HabitDashboard() {
         <ComebackModal
           isOpen={true}
           onClose={() => {}}
-          missedDays={stats.comebackData.missedDays || 0}
-          onStartComeback={() => {}}
+          comebackData={stats.comebackData}
+          onClaimReward={() => {}}
         />
       )}
 
