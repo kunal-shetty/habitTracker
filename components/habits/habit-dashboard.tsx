@@ -322,14 +322,14 @@ export function HabitDashboard() {
         />
       )}
 
-      {stats.comebackData?.isInComebackMode && (
+      {/* {stats.comebackData?.isInComebackMode && (
         <ComebackModal
           isOpen={true}
           onClose={() => {}}
           comebackData={stats.comebackData}
           onClaimReward={() => {}}
         />
-      )}
+      )} */}
 
       <NotificationNudge habits={habits} completions={completions} stats={stats} />
     </div>
