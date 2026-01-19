@@ -122,13 +122,13 @@ export const MOTIVATIONAL_QUOTES: MotivationalQuote[] = [
   },
   {
     id: '20',
-    text: 'The harder you work for something, the greater you'll feel when you achieve it.',
+    text: "The harder you work for something, the greater you'll feel when you achieve it.",
     author: 'Unknown',
     category: 'success',
   },
   {
     id: '21',
-    text: 'Don't be pushed by your problems. Be led by your dreams.',
+    text: "Don't be pushed by your problems. Be led by your dreams.",
     author: 'Ralph Waldo Emerson',
     category: 'mindset',
   },
