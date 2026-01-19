@@ -42,6 +42,7 @@ export function SettingsView({ onResetOnboarding, onClearData, stats, isPremium,
   const [mounted, setMounted] = useState(false)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
   const [notificationsEnabled, setNotificationsEnabled] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const safeLevel = Number.isNaN(stats?.level) ? 1 : stats?.level || 1
   const safeTotalXp = Number.isNaN(stats?.totalXp) ? 0 : stats?.totalXp || 0
