@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Check, Sword, Lock, Crown } from "lucide-react"
+import { Check, Sword, Lock, Crown, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -10,6 +10,8 @@ import { Textarea } from "@/components/ui/textarea"
 import type { Habit, HabitCategory, HabitFrequency, HabitDifficulty } from "@/lib/types"
 import { CATEGORY_CONFIG, HABIT_ICONS, HABIT_COLORS, DIFFICULTY_CONFIG } from "@/lib/constants"
 import { HabitIcon } from "./habit-icon"
+import { HabitTemplatesModal } from "./habit-templates-modal"
+import type { HabitTemplate } from "@/lib/habit-templates"
 
 interface AddHabitSheetProps {
   isOpen: boolean
