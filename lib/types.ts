@@ -51,6 +51,9 @@ export interface HabitCompletion {
   xpEarned?: number
   streakMultiplier?: number
   bonusXp?: number
+  note?: string
+  photoUrl?: string
+  timeSpent?: number // in minutes
 }
 
 export interface Achievement {
