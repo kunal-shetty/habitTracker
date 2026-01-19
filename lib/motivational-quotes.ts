@@ -110,7 +110,7 @@ export const MOTIVATIONAL_QUOTES: MotivationalQuote[] = [
   },
   {
     id: '18',
-    text: 'Your time is limited, don't waste it living someone else's life.',
+    text: "Your time is limited, don't waste it living someone else's life.",
     author: 'Steve Jobs',
     category: 'mindset',
   },
