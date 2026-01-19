@@ -217,6 +217,17 @@ export function AddHabitSheet({
                       <p className="text-sm text-muted-foreground">What would you like to track?</p>
                     </div>
 
+                    {/* Template Button */}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full gap-2 border-2 border-dashed border-primary/50 bg-primary/5 hover:bg-primary/10"
+                      onClick={() => setShowTemplates(true)}
+                    >
+                      <Sparkles className="h-4 w-4" />
+                      Browse Habit Templates
+                    </Button>
+
                     {/* Name input */}
                     <div className="space-y-2">
                       <Label htmlFor="habit-name">Habit name</Label>
