@@ -14,7 +14,7 @@ export const MOTIVATIONAL_QUOTES: MotivationalQuote[] = [
   },
   {
     id: '2',
-    text: 'Your limitation—it's only your imagination.',
+    text: 'Your limitation—it is only your imagination.',
     author: 'Unknown',
     category: 'mindset',
   },
