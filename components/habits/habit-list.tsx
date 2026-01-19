@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import type { Habit, HabitCompletion } from "@/lib/types"
 import { HabitCard } from "./habit-card"
 import { EmptyState } from "./empty-state"
+import { DailyQuoteCard } from "./daily-quote-card"
 import { getTodayString } from "@/lib/habit-utils"
 
 interface HabitListProps {
