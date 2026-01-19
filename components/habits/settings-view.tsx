@@ -66,6 +66,32 @@ export function SettingsView({ onResetOnboarding, onClearData, stats, isPremium,
     await logout()
   }
 
+  const handleExportJSON = () => {
+    downloadExportedData()
+  }
+
+  const handleExportCSV = () => {
+    exportToCSV()
+  }
+
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const content = e.target?.result as string
+      const result = importData(content)
+      if (result.success) {
+        alert("Data imported successfully! The page will reload.")
+        window.location.reload()
+      } else {
+        alert(`Import failed: ${result.error}`)
+      }
+    }
+    reader.readAsText(file)
+  }
+
   return (
     <div className="space-y-6 pb-6">
       {/* Account Section */}
