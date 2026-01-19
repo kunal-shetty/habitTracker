@@ -56,13 +56,13 @@ export const MOTIVATIONAL_QUOTES: MotivationalQuote[] = [
   },
   {
     id: '9',
-    text: 'The difference between who you are and who you want to be is what you do.',
+    text: "The difference between who you are and who you want to be is what you do.",
     author: 'Bill Phillips',
     category: 'mindset',
   },
   {
     id: '10',
-    text: 'Don't watch the clock; do what it does. Keep going.',
+    text: "Don't watch the clock; do what it does. Keep going.",
     author: 'Sam Levenson',
     category: 'perseverance',
   },
