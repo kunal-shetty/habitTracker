@@ -49,7 +49,6 @@ export function AuthScreen({ onComplete }: AuthScreenProps) {
   }
 
   const handleSkip = () => {
-    // Allow users to continue without authentication
     onComplete()
   }
 
