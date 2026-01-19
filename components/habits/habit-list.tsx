@@ -38,7 +38,10 @@ export function HabitList({
   const allComplete = completedCount === habits.length && habits.length > 0
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
+      {/* Daily Quote Card */}
+      <DailyQuoteCard />
+
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-foreground">Today&apos;s Habits</h2>
         <motion.span
