@@ -520,6 +520,13 @@ export function AddHabitSheet({
           </motion.div>
         </motion.div>
       )}
+
+      {/* Habit Templates Modal */}
+      <HabitTemplatesModal
+        isOpen={showTemplates}
+        onClose={() => setShowTemplates(false)}
+        onSelectTemplate={handleTemplateSelect}
+      />
     </AnimatePresence>
   )
 }
