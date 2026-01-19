@@ -216,6 +216,55 @@ export function SettingsView({ onResetOnboarding, onClearData, stats, isPremium,
         <h3 className="mb-4 font-semibold">Data</h3>
         <div className="space-y-2">
           <button
+            onClick={handleExportJSON}
+            className="flex w-full items-center justify-between rounded-lg p-3 transition-colors hover:bg-muted"
+          >
+            <div className="flex items-center gap-3">
+              <Download className="h-5 w-5 text-muted-foreground" />
+              <div className="text-left">
+                <p className="font-medium">Export Data (JSON)</p>
+                <p className="text-xs text-muted-foreground">Backup all your habits and progress</p>
+              </div>
+            </div>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          </button>
+
+          <button
+            onClick={handleExportCSV}
+            className="flex w-full items-center justify-between rounded-lg p-3 transition-colors hover:bg-muted"
+          >
+            <div className="flex items-center gap-3">
+              <FileJson className="h-5 w-5 text-muted-foreground" />
+              <div className="text-left">
+                <p className="font-medium">Export as CSV</p>
+                <p className="text-xs text-muted-foreground">Download data for spreadsheets</p>
+              </div>
+            </div>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          </button>
+
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="flex w-full items-center justify-between rounded-lg p-3 transition-colors hover:bg-muted"
+          >
+            <div className="flex items-center gap-3">
+              <Upload className="h-5 w-5 text-muted-foreground" />
+              <div className="text-left">
+                <p className="font-medium">Import Data</p>
+                <p className="text-xs text-muted-foreground">Restore from backup file</p>
+              </div>
+            </div>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json"
+            onChange={handleImport}
+            className="hidden"
+          />
+
+          <button
             onClick={onResetOnboarding}
             className="flex w-full items-center justify-between rounded-lg p-3 transition-colors hover:bg-muted"
           >
