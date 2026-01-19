@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { motion } from "framer-motion"
 import {
   Moon,
@@ -17,11 +17,15 @@ import {
   User,
   Crown,
   Sparkles,
+  Download,
+  Upload,
+  FileJson,
 } from "lucide-react"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { useAuth } from "@/hooks/use-auth"
+import { downloadExportedData, importData, exportToCSV } from "@/lib/export-import"
 import type { UserStats } from "@/lib/types"
 
 interface SettingsViewProps {
