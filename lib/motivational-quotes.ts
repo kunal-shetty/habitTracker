@@ -92,7 +92,7 @@ export const MOTIVATIONAL_QUOTES: MotivationalQuote[] = [
   },
   {
     id: '15',
-    text: 'You miss 100% of the shots you don't take.',
+    text: "You miss 100% of the shots you don't take.",
     author: 'Wayne Gretzky',
     category: 'motivation',
   },
