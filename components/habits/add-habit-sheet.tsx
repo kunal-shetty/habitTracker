@@ -49,6 +49,7 @@ export function AddHabitSheet({
   onUpgrade,
 }: AddHabitSheetProps) {
   const [step, setStep] = useState(1)
+  const [showTemplates, setShowTemplates] = useState(false)
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
   const [icon, setIcon] = useState("Star")
@@ -63,6 +64,20 @@ export function AddHabitSheet({
 
   const canAddMoreHabits = isPremium || currentHabitCount < habitLimit
   const habitsRemaining = habitLimit - currentHabitCount
+
+  const handleTemplateSelect = (template: HabitTemplate) => {
+    setName(template.name)
+    setDescription(template.description)
+    setIcon(template.icon)
+    setColor(template.color)
+    setCategory(template.category)
+    setDifficulty(template.difficulty)
+    setTargetCount(template.targetCount)
+    setReminderEnabled(!!template.reminderTime)
+    setReminderTime(template.reminderTime || "09:00")
+    setShowTemplates(false)
+    setStep(2) // Move to next step after template selection
+  }
 
   const resetForm = () => {
     setStep(1)
