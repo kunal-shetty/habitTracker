@@ -146,13 +146,13 @@ export const MOTIVATIONAL_QUOTES: MotivationalQuote[] = [
   },
   {
     id: '24',
-    text: 'Success is not final, failure is not fatal: it is the courage to continue that counts.',
+    text: "Success is not final, failure is not fatal: it is the courage to continue that counts.",
     author: 'Winston Churchill',
     category: 'perseverance',
   },
   {
     id: '25',
-    text: 'Believe you can and you're halfway there.',
+    text: "Believe you can and you're halfway there.",
     author: 'Theodore Roosevelt',
     category: 'mindset',
   },
