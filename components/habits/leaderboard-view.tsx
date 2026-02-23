@@ -1,9 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { Trophy, Medal, Crown, Flame, Star, Users, ChevronRight } from "lucide-react"
+import { Trophy, Medal, Crown, Flame, Star, Users, ChevronRight, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { EmptyState } from "./empty-state"
+import { useAuth } from "@/hooks/use-auth"
 
 interface LeaderboardEntry {
   id: string
@@ -16,24 +18,55 @@ interface LeaderboardEntry {
   isCurrentUser?: boolean
 }
 
-// Dummy leaderboard data
-const DUMMY_LEADERBOARD: LeaderboardEntry[] = [
-  { id: "1", rank: 1, name: "Sarah Chen", avatar: "S", level: 42, streak: 156, xp: 28450 },
-  { id: "2", rank: 2, name: "Alex Rivera", avatar: "A", level: 38, streak: 89, xp: 24200 },
-  { id: "3", rank: 3, name: "Jordan Kim", avatar: "J", level: 35, streak: 72, xp: 21800 },
-  { id: "4", rank: 4, name: "Taylor Swift", avatar: "T", level: 32, streak: 65, xp: 19500 },
-  { id: "5", rank: 5, name: "Morgan Lee", avatar: "M", level: 30, streak: 58, xp: 17200 },
-  { id: "6", rank: 6, name: "Casey Jones", avatar: "C", level: 28, streak: 45, xp: 15800 },
-  { id: "7", rank: 7, name: "You", avatar: "Y", level: 12, streak: 14, xp: 4250, isCurrentUser: true },
-  { id: "8", rank: 8, name: "Riley Park", avatar: "R", level: 25, streak: 38, xp: 13400 },
-  { id: "9", rank: 9, name: "Jamie Wu", avatar: "J", level: 22, streak: 31, xp: 11200 },
-  { id: "10", rank: 10, name: "Sam Patel", avatar: "S", level: 20, streak: 28, xp: 9800 },
-]
-
 type LeaderboardTab = "global" | "friends" | "weekly"
 
 export function LeaderboardView() {
   const [activeTab, setActiveTab] = useState<LeaderboardTab>("global")
+  const [leaderboardData, setLeaderboardData] = useState<LeaderboardEntry[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const { user } = useAuth()
+
+  useEffect(() => {
+    async function fetchLeaderboard() {
+      setIsLoading(true)
+      try {
+        const res = await fetch(`/api/leaderboard?tab=${activeTab}`)
+        if (res.ok) {
+          const data = await res.json()
+          setLeaderboardData(data.map((entry: any) => ({
+            ...entry,
+            isCurrentUser: entry.id === user?.id
+          })))
+        }
+      } catch (error) {
+        console.error("Failed to fetch leaderboard:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchLeaderboard()
+  }, [user?.id, activeTab])
+
+  if (isLoading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  if (leaderboardData.length === 0) {
+    return (
+      <EmptyState
+        title="Leaderboard Empty"
+        description="Join the community to see where you rank among other habit builders!"
+        icon={Trophy}
+        actionLabel="Go to Dashboard"
+        onAction={() => window.location.hash = "#home"}
+      />
+    )
+  }
 
   const tabs = [
     { id: "global" as const, label: "Global", icon: Trophy },
@@ -77,63 +110,71 @@ export function LeaderboardView() {
       </div>
 
       {/* Top 3 Podium */}
-      <motion.div
-        className="flex items-end justify-center gap-2 py-4"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        {/* 2nd Place */}
-        <div className="flex flex-col items-center">
-          <div className="mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-slate-400/20 text-xl font-bold">
-            {DUMMY_LEADERBOARD[1].avatar}
-          </div>
-          <div className="flex h-20 w-20 flex-col items-center justify-end rounded-t-xl bg-gradient-to-t from-slate-400/30 to-transparent pb-2">
-            <Medal className="h-6 w-6 text-slate-400" />
-            <span className="text-xs font-bold">2nd</span>
-          </div>
-          <p className="mt-1 text-xs font-medium">{DUMMY_LEADERBOARD[1].name.split(" ")[0]}</p>
-          <p className="text-[10px] text-muted-foreground">{DUMMY_LEADERBOARD[1].xp.toLocaleString()} XP</p>
-        </div>
-
-        {/* 1st Place */}
-        <div className="flex flex-col items-center">
-          <div className="relative mb-2">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/20 text-2xl font-bold ring-2 ring-amber-500">
-              {DUMMY_LEADERBOARD[0].avatar}
+      {leaderboardData.length >= 3 && (
+        <motion.div
+          className="flex items-end justify-center gap-2 py-4"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          {/* 2nd Place */}
+          <div className="flex flex-col items-center">
+            <div className="mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-slate-400/20 text-xl font-bold overflow-hidden ring-2 ring-slate-400/30">
+              {leaderboardData[1].avatar && leaderboardData[1].avatar.length > 2 ? (
+                <img src={leaderboardData[1].avatar} alt="" className="h-full w-full object-cover" />
+              ) : (leaderboardData[1].avatar || "?")}
             </div>
-            <motion.div
-              className="absolute -top-3 left-1/2 -translate-x-1/2"
-              animate={{ y: [0, -3, 0] }}
-              transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY }}
-            >
-              <Crown className="h-6 w-6 text-amber-500" fill="currentColor" />
-            </motion.div>
+            <div className="flex h-20 w-20 flex-col items-center justify-end rounded-t-xl bg-gradient-to-t from-slate-400/30 to-transparent pb-2">
+              <Medal className="h-6 w-6 text-slate-400" />
+              <span className="text-xs font-bold">2nd</span>
+            </div>
+            <p className="mt-1 text-xs font-medium truncate w-20 text-center">{leaderboardData[1].name.split(" ")[0]}</p>
+            <p className="text-[10px] text-muted-foreground">{leaderboardData[1].xp.toLocaleString()} XP</p>
           </div>
-          <div className="flex h-28 w-24 flex-col items-center justify-end rounded-t-xl bg-gradient-to-t from-amber-500/30 to-transparent pb-2">
-            <Trophy className="h-8 w-8 text-amber-500" />
-            <span className="text-sm font-bold">1st</span>
-          </div>
-          <p className="mt-1 text-sm font-bold">{DUMMY_LEADERBOARD[0].name.split(" ")[0]}</p>
-          <p className="text-xs text-muted-foreground">{DUMMY_LEADERBOARD[0].xp.toLocaleString()} XP</p>
-        </div>
 
-        {/* 3rd Place */}
-        <div className="flex flex-col items-center">
-          <div className="mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-amber-700/20 text-xl font-bold">
-            {DUMMY_LEADERBOARD[2].avatar}
+          {/* 1st Place */}
+          <div className="flex flex-col items-center">
+            <div className="relative mb-2">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/20 text-2xl font-bold ring-2 ring-amber-500 overflow-hidden shadow-lg">
+                {leaderboardData[0].avatar && leaderboardData[0].avatar.length > 2 ? (
+                  <img src={leaderboardData[0].avatar} alt="" className="h-full w-full object-cover" />
+                ) : (leaderboardData[0].avatar || "?")}
+              </div>
+              <motion.div
+                className="absolute -top-3 left-1/2 -translate-x-1/2"
+                animate={{ y: [0, -3, 0] }}
+                transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY }}
+              >
+                <Crown className="h-6 w-6 text-amber-500" fill="currentColor" />
+              </motion.div>
+            </div>
+            <div className="flex h-28 w-24 flex-col items-center justify-end rounded-t-xl bg-gradient-to-t from-amber-500/30 to-transparent pb-2">
+              <Trophy className="h-8 w-8 text-amber-500" />
+              <span className="text-sm font-bold">1st</span>
+            </div>
+            <p className="mt-1 text-sm font-bold truncate w-24 text-center">{leaderboardData[0].name.split(" ")[0]}</p>
+            <p className="text-xs text-muted-foreground">{leaderboardData[0].xp.toLocaleString()} XP</p>
           </div>
-          <div className="flex h-16 w-20 flex-col items-center justify-end rounded-t-xl bg-gradient-to-t from-amber-700/30 to-transparent pb-2">
-            <Medal className="h-5 w-5 text-amber-700" />
-            <span className="text-xs font-bold">3rd</span>
+
+          {/* 3rd Place */}
+          <div className="flex flex-col items-center">
+            <div className="mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-amber-700/20 text-xl font-bold overflow-hidden ring-2 ring-amber-700/30">
+              {leaderboardData[2].avatar && leaderboardData[2].avatar.length > 2 ? (
+                <img src={leaderboardData[2].avatar} alt="" className="h-full w-full object-cover" />
+              ) : (leaderboardData[2].avatar || "?")}
+            </div>
+            <div className="flex h-16 w-20 flex-col items-center justify-end rounded-t-xl bg-gradient-to-t from-amber-700/30 to-transparent pb-2">
+              <Medal className="h-5 w-5 text-amber-700" />
+              <span className="text-xs font-bold">3rd</span>
+            </div>
+            <p className="mt-1 text-xs font-medium truncate w-20 text-center">{leaderboardData[2].name.split(" ")[0]}</p>
+            <p className="text-[10px] text-muted-foreground">{leaderboardData[2].xp.toLocaleString()} XP</p>
           </div>
-          <p className="mt-1 text-xs font-medium">{DUMMY_LEADERBOARD[2].name.split(" ")[0]}</p>
-          <p className="text-[10px] text-muted-foreground">{DUMMY_LEADERBOARD[2].xp.toLocaleString()} XP</p>
-        </div>
-      </motion.div>
+        </motion.div>
+      )}
 
       {/* Leaderboard List */}
       <div className="space-y-2">
-        {DUMMY_LEADERBOARD.slice(3).map((entry, index) => (
+        {leaderboardData.slice(leaderboardData.length >= 3 ? 3 : 0).map((entry, index) => (
           <motion.div
             key={entry.id}
             className={cn(
@@ -150,11 +191,13 @@ export function LeaderboardView() {
             {/* Avatar */}
             <div
               className={cn(
-                "flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold",
-                entry.isCurrentUser ? "bg-primary text-primary-foreground" : "bg-muted",
+                "flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold overflow-hidden",
+                entry.isCurrentUser ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
               )}
             >
-              {entry.avatar}
+              {entry.avatar && entry.avatar.length > 2 ? (
+                <img src={entry.avatar} alt="" className="h-full w-full object-cover" />
+              ) : (entry.avatar || "?")}
             </div>
 
             {/* Info */}

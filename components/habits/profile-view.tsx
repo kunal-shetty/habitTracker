@@ -127,8 +127,12 @@ export function ProfileView({ stats, unlockedAchievements }: ProfileViewProps) {
         <div className="relative flex items-start gap-4">
           {/* Avatar */}
           <div className="relative">
-            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-primary to-chart-2 text-3xl font-bold text-primary-foreground shadow-lg">
-              {user?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || "U"}
+            <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-primary to-chart-2 text-3xl font-bold text-primary-foreground shadow-lg">
+              {user?.avatar ? (
+                <img src={user.avatar} alt={user.name} className="h-full w-full object-cover" />
+              ) : (
+                user?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || "U"
+              )}
             </div>
             <button className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full bg-background shadow-md">
               <Camera className="h-4 w-4 text-muted-foreground" />
@@ -225,11 +229,11 @@ export function ProfileView({ stats, unlockedAchievements }: ProfileViewProps) {
                   {generateAchievementIcon(achievement.icon)}
                 </div>
                 <div className="flex-1">
-                  <p className="font-medium">{achievement.title}</p>
+                  <p className="font-medium">{achievement.name}</p>
                   <p className="text-xs text-muted-foreground">{achievement.description}</p>
                 </div>
                 <span className="text-xs font-medium" style={{ color: colors.text }}>
-                  +{achievement.xpReward || 0} XP
+                  +{(achievement as any).xpReward || 50} XP
                 </span>
               </div>
             )

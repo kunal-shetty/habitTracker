@@ -18,6 +18,8 @@ import {
 import { Button } from "@/components/ui/button"
 import type { Habit, HabitCompletion } from "@/lib/types"
 import { formatDate, isHabitCompletedForDate } from "@/lib/habit-utils"
+import { EmptyState } from "./empty-state"
+import { Target } from "lucide-react"
 
 interface CalendarViewProps {
   habits: Habit[]
@@ -111,15 +113,14 @@ export function CalendarView({ habits, completions, onToggleCompletion }: Calend
               <motion.button
                 key={day.toISOString()}
                 onClick={() => setSelectedDate(isSelected ? null : day)}
-                className={`relative aspect-square flex flex-col items-center justify-center rounded-lg p-1 transition-colors ${
-                  !isCurrentMonth
-                    ? "text-muted-foreground/40"
-                    : isSelected
-                      ? "bg-primary text-primary-foreground"
-                      : isToday
-                        ? "bg-primary/10 text-primary font-semibold"
-                        : "hover:bg-muted"
-                }`}
+                className={`relative aspect-square flex flex-col items-center justify-center rounded-lg p-1 transition-colors ${!isCurrentMonth
+                  ? "text-muted-foreground/40"
+                  : isSelected
+                    ? "bg-primary text-primary-foreground"
+                    : isToday
+                      ? "bg-primary/10 text-primary font-semibold"
+                      : "hover:bg-muted"
+                  }`}
                 whileTap={{ scale: 0.9 }}
               >
                 <span className="text-sm">{format(day, "d")}</span>
@@ -165,22 +166,26 @@ export function CalendarView({ habits, completions, onToggleCompletion }: Calend
               </div>
 
               {activeHabits.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No habits to track</p>
+                <EmptyState
+                  title="No habits to track"
+                  description="Add some habits to see your completion calendar!"
+                  icon={Target}
+                  actionLabel="Go to Dashboard"
+                  onAction={() => window.location.hash = "#home"}
+                />
               ) : (
                 <div className="space-y-2">
                   {getHabitsForDate(selectedDate).map(({ habit, completed }) => (
                     <motion.button
                       key={habit.id}
                       onClick={() => onToggleCompletion(habit.id, formatDate(selectedDate))}
-                      className={`flex w-full items-center gap-3 rounded-lg p-2 transition-colors ${
-                        completed ? "bg-primary/10" : "bg-muted hover:bg-muted/80"
-                      }`}
+                      className={`flex w-full items-center gap-3 rounded-lg p-2 transition-colors ${completed ? "bg-primary/10" : "bg-muted hover:bg-muted/80"
+                        }`}
                       whileTap={{ scale: 0.98 }}
                     >
                       <div
-                        className={`flex h-8 w-8 items-center justify-center rounded-lg ${
-                          completed ? "bg-primary" : "bg-background"
-                        }`}
+                        className={`flex h-8 w-8 items-center justify-center rounded-lg ${completed ? "bg-primary" : "bg-background"
+                          }`}
                         style={{ backgroundColor: completed ? habit.color : undefined }}
                       >
                         {completed && (

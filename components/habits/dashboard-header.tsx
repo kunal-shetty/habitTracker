@@ -12,10 +12,11 @@ import { GraceTokenIndicator } from "./grace-token-indicator"
 
 interface DashboardHeaderProps {
   stats: UserStats
+  userName?: string
   onOpenLeaderboard?: () => void
 }
 
-export function DashboardHeader({ stats, onOpenLeaderboard }: DashboardHeaderProps) {
+export function DashboardHeader({ stats, userName, onOpenLeaderboard }: DashboardHeaderProps) {
   const [showLevelUp, setShowLevelUp] = useState(false)
   const safeLevel = Number.isNaN(stats.level) ? 1 : stats.level || 1
   const safeTotalXp = Number.isNaN(stats.totalXp) ? 0 : stats.totalXp || 0
@@ -62,7 +63,9 @@ export function DashboardHeader({ stats, onOpenLeaderboard }: DashboardHeaderPro
         <div className="mb-4 flex items-start justify-between">
           <div>
             <p className="text-sm text-muted-foreground">{format(today, "EEEE, MMMM d")}</p>
-            <h1 className="text-2xl font-bold text-foreground">{greeting}</h1>
+            <h1 className="text-2xl font-bold text-foreground">
+              {greeting}, {userName || "Habit Hero"}
+            </h1>
           </div>
           <div className="flex items-center gap-2">
             <GraceTokenIndicator count={safeGraceTokens} compact />

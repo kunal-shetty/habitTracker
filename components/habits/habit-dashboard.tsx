@@ -22,14 +22,36 @@ import { ComebackModal } from "./comeback-modal"
 import { NotificationNudge } from "./notification-nudge"
 import { PremiumUpgradeModal } from "./premium-upgrade-modal"
 import { ACHIEVEMENTS } from "@/lib/constants"
+import {
+  calculateOverallStreak,
+  calculatePoints,
+  getTodayString,
+  getCompletionForHabitOnDate,
+  calculateStreak,
+} from "@/lib/habit-utils"
 
 type TabType = "home" | "quests" | "calendar" | "stats" | "profile" | "settings"
+
+import { createClient } from "@/lib/supabase-client"
+import { useRouter } from "next/navigation"
+import { useEffect } from "react"
+import { useAuth } from "@/hooks/use-auth"
 
 export function HabitDashboard() {
   const [activeTab, setActiveTab] = useState<TabType>("home")
   const [showAddHabit, setShowAddHabit] = useState(false)
   const [showLeaderboard, setShowLeaderboard] = useState(false)
   const [showPremiumModal, setShowPremiumModal] = useState(false)
+  const supabase = createClient()
+  const router = useRouter()
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth()
+
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.push('/login')
+    }
+  }, [isAuthenticated, authLoading, router])
+
   const {
     habits,
     completions,
@@ -53,10 +75,10 @@ export function HabitDashboard() {
 
   const completedUnclaimedQuests = (stats.currentDailyQuests || []).filter((q) => q.isCompleted).length
 
-  const handleClearData = useCallback(() => {
-    localStorage.clear()
-    window.location.reload()
-  }, [])
+  const handleClearData = useCallback(async () => {
+    await supabase.auth.signOut()
+    router.push('/login')
+  }, [supabase, router])
 
   const handleResetOnboarding = useCallback(() => {
     resetOnboarding()
@@ -76,7 +98,7 @@ export function HabitDashboard() {
     setShowPremiumModal(false)
   }
 
-  if (!isLoaded) {
+  if (!isLoaded || authLoading) {
     return (
       <div className="flex h-dvh items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -94,7 +116,13 @@ export function HabitDashboard() {
 
   return (
     <div className="flex h-dvh flex-col bg-background safe-top">
-      {activeTab === "home" && <DashboardHeader stats={stats} onOpenLeaderboard={() => setShowLeaderboard(true)} />}
+      {activeTab === "home" && (
+        <DashboardHeader
+          stats={stats}
+          userName={user?.name}
+          onOpenLeaderboard={() => setShowLeaderboard(true)}
+        />
+      )}
 
       {activeTab !== "home" && (
         <header className="flex items-center justify-between border-b border-border bg-background px-4 py-4">
@@ -258,9 +286,8 @@ export function HabitDashboard() {
                 setActiveTab(tab.id)
                 setShowLeaderboard(false)
               }}
-              className={`relative flex flex-col items-center gap-1 px-3 py-2 transition-colors ${
-                activeTab === tab.id ? "text-primary" : "text-muted-foreground"
-              }`}
+              className={`relative flex flex-col items-center gap-1 px-3 py-2 transition-colors ${activeTab === tab.id ? "text-primary" : "text-muted-foreground"
+                }`}
             >
               <motion.div
                 animate={{
@@ -331,7 +358,11 @@ export function HabitDashboard() {
         />
       )} */}
 
-      <NotificationNudge habits={habits} completions={completions} stats={stats} />
+      <NotificationNudge
+        type="almostDone"
+        habitsLeft={activeHabits.length - completions.filter(c => c.date === getTodayString()).length}
+        onDismiss={() => { }}
+      />
     </div>
   )
 }

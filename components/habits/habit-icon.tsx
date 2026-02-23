@@ -23,7 +23,7 @@ import {
   Phone,
   Laptop,
   Briefcase,
-  type LucideCrop as LucideProps,
+  type LucideProps,
 } from "lucide-react"
 
 const iconMap: Record<string, React.FC<LucideProps>> = {
@@ -49,7 +49,7 @@ const iconMap: Record<string, React.FC<LucideProps>> = {
   Briefcase,
 }
 
-interface HabitIconProps extends LucideProps {
+interface HabitIconProps extends React.SVGProps<SVGSVGElement> {
   name: string
 }
 

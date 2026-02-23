@@ -69,8 +69,9 @@ export function HabitTemplatesModal({ isOpen, onClose, onSelectTemplate }: Habit
   return (
     <AnimatePresence>
       {isOpen && (
-        <>
+        <div key="habit-templates-wrapper">
           <motion.div
+            key="templates-backdrop"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -78,6 +79,7 @@ export function HabitTemplatesModal({ isOpen, onClose, onSelectTemplate }: Habit
             onClick={onClose}
           />
           <motion.div
+            key="templates-modal-content"
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -118,11 +120,10 @@ export function HabitTemplatesModal({ isOpen, onClose, onSelectTemplate }: Habit
                     <button
                       key={category}
                       onClick={() => setSelectedCategory(category)}
-                      className={`flex items-center gap-2 whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                        isActive
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                      }`}
+                      className={`flex items-center gap-2 whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors ${isActive
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                        }`}
                     >
                       {category === "all" ? (
                         <>
@@ -198,7 +199,7 @@ export function HabitTemplatesModal({ isOpen, onClose, onSelectTemplate }: Habit
               </div>
             </ScrollArea>
           </motion.div>
-        </>
+        </div>
       )}
     </AnimatePresence>
   )

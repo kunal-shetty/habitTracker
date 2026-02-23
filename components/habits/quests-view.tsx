@@ -5,6 +5,7 @@ import { Scroll, Trophy, Calendar, Star, Shield, Zap } from "lucide-react"
 import type { Quest } from "@/lib/types"
 import { QuestCard } from "./quest-card"
 import { GraceTokenIndicator } from "./grace-token-indicator"
+import { EmptyState } from "./empty-state"
 
 interface QuestsViewProps {
   dailyQuests: Quest[]
@@ -69,10 +70,13 @@ export function QuestsView({
               <QuestCard key={quest.id} quest={quest} onClaim={() => onClaimReward(quest.id)} />
             ))
           ) : (
-            <div className="rounded-xl border border-dashed border-border p-6 text-center">
-              <Scroll className="mx-auto h-8 w-8 text-muted-foreground" />
-              <p className="mt-2 text-sm text-muted-foreground">New quests will appear soon!</p>
-            </div>
+            <EmptyState
+              title="Quest Board Empty"
+              description="New daily quests will appear here to help you earn extra XP and rewards!"
+              icon={Scroll}
+              onAction={() => window.location.hash = "#home"}
+              actionLabel="Go to Habits"
+            />
           )}
         </div>
       </motion.div>

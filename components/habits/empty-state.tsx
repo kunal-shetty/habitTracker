@@ -1,14 +1,27 @@
-"use client"
-
+import type React from "react"
 import { motion } from "framer-motion"
-import { Plus, Target, Sparkles } from "lucide-react"
+import { Plus, Target, Sparkles, LucideIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 interface EmptyStateProps {
-  onAddHabit: () => void
+  title?: string
+  description?: string
+  icon?: LucideIcon
+  actionLabel?: string
+  onAction?: () => void
+  onAddHabit?: () => void // Legacy support
 }
 
-export function EmptyState({ onAddHabit }: EmptyStateProps) {
+export function EmptyState({
+  title = "Start Your Journey",
+  description = "Create your first habit and begin building a better routine, one day at a time.",
+  icon: Icon = Target,
+  actionLabel = "Create your first habit",
+  onAction,
+  onAddHabit
+}: EmptyStateProps) {
+  const handleAction = onAction || onAddHabit
+
   return (
     <motion.div
       className="flex flex-col items-center justify-center rounded-2xl bg-card p-8 text-center"
@@ -29,7 +42,7 @@ export function EmptyState({ onAddHabit }: EmptyStateProps) {
           }}
         >
           <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-primary/10">
-            <Target className="h-10 w-10 text-primary" />
+            <Icon className="h-10 w-10 text-primary" />
           </div>
         </motion.div>
 
@@ -64,7 +77,7 @@ export function EmptyState({ onAddHabit }: EmptyStateProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
       >
-        Start Your Journey
+        {title}
       </motion.h3>
 
       <motion.p
@@ -73,15 +86,17 @@ export function EmptyState({ onAddHabit }: EmptyStateProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
       >
-        Create your first habit and begin building a better routine, one day at a time.
+        {description}
       </motion.p>
 
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
-        <Button onClick={onAddHabit} size="lg">
-          <Plus className="mr-2 h-5 w-5" />
-          Create your first habit
-        </Button>
-      </motion.div>
+      {handleAction && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+          <Button onClick={handleAction} size="lg">
+            <Plus className="mr-2 h-5 w-5" />
+            {actionLabel}
+          </Button>
+        </motion.div>
+      )}
     </motion.div>
   )
 }

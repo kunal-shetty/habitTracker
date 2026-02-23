@@ -1,8 +1,7 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import type { Habit, HabitCompletion, UserStats, Quest, GraceToken } from "@/lib/types"
-import { getHabits, saveHabits, getCompletions, saveCompletions, getStats, saveStats } from "@/lib/storage"
 import {
   calculateOverallStreak,
   calculatePoints,
@@ -10,6 +9,7 @@ import {
   getTodayString,
   getCompletionForHabitOnDate,
   calculateStreak,
+  formatDate,
 } from "@/lib/habit-utils"
 import {
   calculateXpForCompletion,
@@ -17,433 +17,336 @@ import {
   generateDailyQuests,
   generateWeeklyChallenge,
   updateQuestProgress,
-  checkStreakMilestone,
   calculateUserLevel,
-  checkComebackStatus,
-  generateComebackQuests,
   createDefaultHabit,
 } from "@/lib/gamification-utils"
 import { ACHIEVEMENTS } from "@/lib/constants"
 
+const DEFAULT_STATS: UserStats = {
+  totalCompletions: 0,
+  currentOverallStreak: 0,
+  longestOverallStreak: 0,
+  totalPoints: 0,
+  level: 1,
+  achievements: [],
+  totalXp: 0,
+  prestigeLevel: 0,
+  streakMultiplier: 1,
+  graceTokens: [],
+  availableGraceTokens: 0,
+  questsCompleted: 0,
+  perfectDays: 0,
+  currentDailyQuests: [],
+  unlockedRewards: [],
+  selectedTheme: "default",
+  selectedAvatar: "default",
+  selectedStreakEffect: "default",
+  comebackData: {
+    lastActiveDate: new Date().toISOString(),
+    missedDays: 0,
+    isInComebackMode: false,
+    comebackQuestsCompleted: 0,
+    welcomeBackRewardClaimed: false,
+  },
+  notificationPreferences: {
+    enabled: true,
+    streakReminders: true,
+    questReminders: true,
+    achievementAlerts: true,
+    gentleNudges: true,
+    preferredTimes: ["09:00", "21:00"],
+  },
+  friends: [],
+  socialFeaturesEnabled: false,
+}
+
 export function useHabits() {
   const [habits, setHabits] = useState<Habit[]>([])
   const [completions, setCompletions] = useState<HabitCompletion[]>([])
-  const [stats, setStats] = useState<UserStats>({
-    totalCompletions: 0,
-    currentOverallStreak: 0,
-    longestOverallStreak: 0,
-    totalPoints: 0,
-    level: 1,
-    achievements: [],
-    totalXp: 0,
-    prestigeLevel: 0,
-    streakMultiplier: 1,
-    graceTokens: [],
-    availableGraceTokens: 0,
-    questsCompleted: 0,
-    perfectDays: 0,
-    currentDailyQuests: [],
-    currentWeeklyChallenge: undefined,
-    currentMonthlyTheme: undefined,
-    unlockedRewards: [],
-    selectedTheme: "default",
-    selectedAvatar: "default",
-    selectedStreakEffect: "default",
-    comebackData: {
-      lastActiveDate: new Date().toISOString(),
-      missedDays: 0,
-      isInComebackMode: false,
-      comebackQuestsCompleted: 0,
-      welcomeBackRewardClaimed: false,
-    },
-    notificationPreferences: {
-      enabled: true,
-      streakReminders: true,
-      questReminders: true,
-      achievementAlerts: true,
-      gentleNudges: true,
-      preferredTimes: ["09:00", "21:00"],
-    },
-    friends: [],
-    weeklyRank: undefined,
-    socialFeaturesEnabled: false,
-  })
+  const [stats, setStats] = useState<UserStats>(DEFAULT_STATS)
   const [isLoaded, setIsLoaded] = useState(false)
   const [newAchievement, setNewAchievement] = useState<string | null>(null)
-  const [levelUpData, setLevelUpData] = useState<{ oldLevel: number; newLevel: number } | null>(null)
-  const [streakMilestone, setStreakMilestone] = useState<(typeof ACHIEVEMENTS)[number] | null>(null)
   const [xpGained, setXpGained] = useState<{ amount: number; habitId: string } | null>(null)
-  const [questCompleted, setQuestCompleted] = useState<Quest | null>(null)
   const [habitEvolution, setHabitEvolution] = useState<{ habit: Habit; newStage: string } | null>(null)
 
-  // Load data from localStorage
+  // Map database (snake_case) to frontend (camelCase)
+  const mapHabit = (h: any): Habit => ({
+    ...h,
+    targetCount: h.target_count ?? 1,
+    targetDays: h.target_days ?? [0, 1, 2, 3, 4, 5, 6],
+    reminderTime: h.reminder_time ?? null,
+    reminderEnabled: h.reminder_enabled ?? false,
+    isMastered: h.is_mastered ?? false,
+    createdAt: h.created_at ?? new Date().toISOString(),
+    evolutionStage: h.evolution_stage ?? "seed",
+    level: h.level ?? 1,
+    experience: h.experience ?? 0,
+    health: h.health ?? 100,
+    maxHealth: h.max_health ?? 100,
+  })
+
+  const mapLog = (l: any): HabitCompletion => ({
+    ...l,
+    habitId: l.habit_id,
+    date: l.date || formatDate(new Date(l.completed_at)),
+    completedAt: l.completed_at ?? new Date().toISOString(),
+    xpEarned: l.xp_earned ?? 0,
+    streakMultiplier: l.streak_multiplier ?? 1,
+    bonusXp: l.bonus_xp ?? 0,
+    photoUrl: l.photo_url ?? null,
+    count: l.count ?? 1,
+  })
+
+  // Load data from API
   useEffect(() => {
-    const loadedHabits = getHabits()
-    const loadedCompletions = getCompletions()
-    const loadedStats = getStats()
+    async function fetchData() {
+      try {
+        const [habitsRes, statsRes] = await Promise.all([
+          fetch('/api/habits'),
+          fetch('/api/stats')
+        ])
 
-    const updatedQuests = generateDailyQuests(loadedStats.currentDailyQuests || [])
+        if (habitsRes.ok && statsRes.ok) {
+          const habitsData = await habitsRes.json()
+          const statsData = await statsRes.json()
 
-    let weeklyChallenge = loadedStats.currentWeeklyChallenge
-    if (!weeklyChallenge || new Date(weeklyChallenge.expiresAt) < new Date()) {
-      weeklyChallenge = generateWeeklyChallenge()
+          const mappedHabits = habitsData.map(mapHabit)
+          const allCompletions = habitsData.flatMap((h: any) => (h.logs ?? []).map(mapLog))
+
+          setHabits(mappedHabits)
+          setCompletions(allCompletions)
+
+          // transform stats as needed
+          setStats({
+            ...DEFAULT_STATS,
+            ...statsData,
+            totalCompletions: statsData.total_completions ?? statsData.totalCompletions ?? 0,
+            currentOverallStreak: statsData.current_overall_streak ?? statsData.currentOverallStreak ?? 0,
+            longestOverallStreak: statsData.longest_overall_streak ?? statsData.longestOverallStreak ?? 0,
+            availableGraceTokens: statsData.available_grace_tokens ?? statsData.availableGraceTokens ?? 0,
+            perfectDays: statsData.perfect_days ?? statsData.perfectDays ?? 0,
+            selectedTheme: statsData.selected_theme ?? statsData.selectedTheme ?? "default",
+            selectedAvatar: statsData.selected_avatar ?? statsData.selectedAvatar ?? "default",
+            selectedStreakEffect: statsData.selected_streak_effect ?? statsData.selectedStreakEffect ?? "default",
+            notificationPreferences: statsData.notification_preferences ?? statsData.notificationPreferences ?? DEFAULT_STATS.notificationPreferences,
+            comebackData: statsData.comeback_data ?? statsData.comebackData ?? DEFAULT_STATS.comebackData,
+            currentDailyQuests: statsData.currentDailyQuests ?? [],
+            currentWeeklyChallenge: statsData.currentWeeklyChallenge,
+            currentMonthlyTheme: statsData.currentMonthlyTheme,
+          })
+        }
+      } catch (error) {
+        console.error("Failed to fetch habits data:", error)
+      } finally {
+        setIsLoaded(true)
+      }
     }
 
-    const { isComeback, daysMissed } = checkComebackStatus(
-      loadedStats.comebackData?.lastActiveDate || new Date().toISOString(),
-    )
-
-    const finalStats = {
-      ...loadedStats,
-      currentDailyQuests: updatedQuests,
-      currentWeeklyChallenge: weeklyChallenge,
-      comebackData: {
-        ...loadedStats.comebackData,
-        isInComebackMode: isComeback,
-        missedDays: daysMissed,
-      },
-    }
-
-    if (isComeback && !loadedStats.comebackData?.isInComebackMode) {
-      finalStats.currentDailyQuests = [
-        ...generateComebackQuests(daysMissed),
-        ...finalStats.currentDailyQuests.slice(0, 1),
-      ]
-    }
-
-    setHabits(loadedHabits)
-    setCompletions(loadedCompletions)
-    setStats(finalStats)
-    saveStats(finalStats)
-    setIsLoaded(true)
+    fetchData()
   }, [])
 
-  // Check for new achievements
-  const checkAchievements = useCallback(
-    (currentHabits: Habit[], currentCompletions: HabitCompletion[], currentStats: UserStats): string[] => {
-      const newAchievements: string[] = []
-
-      ACHIEVEMENTS.forEach((achievement) => {
-        if (currentStats.achievements?.includes(achievement.id)) return
-
-        let unlocked = false
-
-        switch (achievement.type) {
-          case "habits":
-            unlocked = currentHabits.filter((h) => !h.archived).length >= achievement.requirement
-            break
-          case "completions":
-            unlocked = currentCompletions.length >= achievement.requirement
-            break
-          case "streak":
-            unlocked = (currentStats.currentOverallStreak || 0) >= achievement.requirement
-            break
-          case "level":
-            unlocked = (currentStats.level || 1) >= achievement.requirement
-            break
-          case "quest":
-            unlocked = (currentStats.questsCompleted || 0) >= achievement.requirement
-            break
-          case "special":
-            if (achievement.id === "habit-master") {
-              unlocked = currentHabits.some((h) => h.isMastered)
-            }
-            break
-        }
-
-        if (unlocked) {
-          newAchievements.push(achievement.id)
-        }
-      })
-
-      return newAchievements
-    },
-    [],
-  )
-
-  const updateStats = useCallback(
-    (newHabits: Habit[], newCompletions: HabitCompletion[], xpEarned?: number) => {
-      const overallStreak = calculateOverallStreak(newHabits, newCompletions)
-      const points = calculatePoints(newCompletions, overallStreak)
-      const safeXpEarned = Number.isNaN(xpEarned) || xpEarned === undefined ? 0 : xpEarned
-      const newTotalXp = (stats.totalXp || 0) + safeXpEarned
-      const newLevel = calculateUserLevel(newTotalXp)
-      const oldLevel = stats.level || 1
-
-      if (newLevel > oldLevel) {
-        setLevelUpData({ oldLevel, newLevel })
-      }
-
-      const milestone = checkStreakMilestone(overallStreak)
-      if (milestone && overallStreak === milestone.days) {
-        setStreakMilestone(ACHIEVEMENTS.find((a) => a.id === milestone.achievement) || null)
-      }
-
-      const updatedQuests = (stats.currentDailyQuests || []).map((q) =>
-        updateQuestProgress(q, newHabits, newCompletions, stats),
-      )
-
-      // Check for newly completed quests
-      const newlyCompleted = updatedQuests.find(
-        (q) => q.isCompleted && !(stats.currentDailyQuests || []).find((oq) => oq.id === q.id)?.isCompleted,
-      )
-      if (newlyCompleted) {
-        setQuestCompleted(newlyCompleted)
-      }
-
-      const today = getTodayString()
-      const activeHabits = newHabits.filter((h) => !h.archived)
-      const allCompletedToday = activeHabits.every((h) =>
-        newCompletions.some((c) => c.habitId === h.id && c.date === today && c.count >= h.targetCount),
-      )
-      const newPerfectDays =
-        allCompletedToday && activeHabits.length > 0 ? (stats.perfectDays || 0) + 1 : stats.perfectDays || 0
-
-      const updatedStats: UserStats = {
-        ...stats,
-        totalCompletions: newCompletions.length,
-        currentOverallStreak: overallStreak,
-        longestOverallStreak: Math.max(stats.longestOverallStreak || 0, overallStreak),
-        totalPoints: points,
-        level: newLevel,
-        totalXp: newTotalXp,
-        streakMultiplier: Math.min(1 + overallStreak * 0.1, 5),
-        perfectDays: newPerfectDays,
-        currentDailyQuests: updatedQuests,
-        questsCompleted: (stats.questsCompleted || 0) + (newlyCompleted ? 1 : 0),
-        comebackData: {
-          ...stats.comebackData,
-          lastActiveDate: new Date().toISOString(),
-          isInComebackMode: false,
-        },
-      }
-
-      // Check for new achievements
-      const newAchievements = checkAchievements(newHabits, newCompletions, updatedStats)
-      if (newAchievements.length > 0) {
-        updatedStats.achievements = [...(updatedStats.achievements || []), ...newAchievements]
-        setNewAchievement(newAchievements[0])
-      }
-
-      setStats(updatedStats)
-      saveStats(updatedStats)
-    },
-    [stats, checkAchievements],
-  )
-
   const addHabit = useCallback(
-    (
-      habitInput: Omit<
-        Habit,
-        | "id"
-        | "createdAt"
-        | "archived"
-        | "level"
-        | "experience"
-        | "health"
-        | "maxHealth"
-        | "power"
-        | "evolutionStage"
-        | "isMastered"
-      >,
+    async (
+      habitInput: Omit<Habit, "id" | "createdAt" | "archived" | "level" | "experience" | "health" | "maxHealth" | "power" | "evolutionStage" | "isMastered">
     ) => {
       const habitWithDefaults = createDefaultHabit(habitInput)
-      const newHabit: Habit = {
+
+      // Optimistic Update
+      const tempId = `temp-${Date.now()}`
+      const optimisticHabit: Habit = {
         ...habitWithDefaults,
-        id: generateId(),
+        id: tempId,
         createdAt: new Date().toISOString(),
         archived: false,
       }
-      const newHabits = [...habits, newHabit]
-      setHabits(newHabits)
-      saveHabits(newHabits)
-      updateStats(newHabits, completions)
-      return newHabit
+
+      setHabits(prev => [optimisticHabit, ...prev])
+
+      try {
+        const res = await fetch('/api/habits', {
+          method: 'POST',
+          body: JSON.stringify({
+            ...habitInput,
+            target_count: habitInput.targetCount,
+            target_days: habitInput.targetDays,
+          })
+        })
+
+        if (res.ok) {
+          const actualHabit = mapHabit(await res.json())
+          setHabits(prev => prev.map(h => h.id === tempId ? actualHabit : h))
+          return actualHabit
+        } else {
+          throw new Error("Failed to add habit")
+        }
+      } catch (error) {
+        setHabits(prev => prev.filter(h => h.id !== tempId))
+        console.error(error)
+      }
     },
-    [habits, completions, updateStats],
+    [habits]
   )
 
-  const updateHabit = useCallback(
-    (updatedHabit: Habit) => {
-      const newHabits = habits.map((h) => (h.id === updatedHabit.id ? updatedHabit : h))
-      setHabits(newHabits)
-      saveHabits(newHabits)
-    },
-    [habits],
-  )
+  const xpRef = useRef<number>(0)
+  const completionsRef = useRef<HabitCompletion[]>([])
+  const totalCompletionsRef = useRef<number>(0)
 
-  const deleteHabit = useCallback(
-    (habitId: string) => {
-      const newHabits = habits.filter((h) => h.id !== habitId)
-      const newCompletions = completions.filter((c) => c.habitId !== habitId)
-      setHabits(newHabits)
-      setCompletions(newCompletions)
-      saveHabits(newHabits)
-      saveCompletions(newCompletions)
-      updateStats(newHabits, newCompletions)
-    },
-    [habits, completions, updateStats],
-  )
+  // Update refs when state changes
+  useEffect(() => {
+    if (stats) {
+      xpRef.current = stats.totalXp
+      totalCompletionsRef.current = stats.totalCompletions
+    }
+  }, [stats?.totalXp, stats?.totalCompletions])
+
+  useEffect(() => {
+    completionsRef.current = completions
+  }, [completions])
 
   const toggleCompletion = useCallback(
-    (habitId: string, date?: string) => {
+    async (habitId: string, date?: string) => {
       const targetDate = date || getTodayString()
       const habit = habits.find((h) => h.id === habitId)
-      if (!habit) return
+      if (!habit || !stats) return
 
-      const existingCompletion = getCompletionForHabitOnDate(completions, habitId, targetDate)
-      const streak = calculateStreak(completions, habit)
+      // Use Ref for completion check to handle rapid clicks
+      const existingCompletion = getCompletionForHabitOnDate(completionsRef.current, habitId, targetDate)
+      const currentCount = existingCompletion?.count || 0
 
-      if (existingCompletion && existingCompletion.count >= habit.targetCount) {
-        return // Already completed, do nothing
+      if (currentCount >= habit.targetCount) {
+        console.log("Habit already completed for today.")
+        return
       }
 
-      let newCompletions: HabitCompletion[]
-      let xpEarned = 0
-      let updatedHabit = habit
+      const streak = calculateStreak(completionsRef.current, habit)
+      const xpData = calculateXpForCompletion(habit, streak)
+      const updatedHabit = updateHabitAfterCompletion(habit, streak)
 
-      if (existingCompletion) {
-        // Increment count (already checked it's not fully completed above)
-        const { totalXp, streakMultiplier, bonusXp } = calculateXpForCompletion(habit, streak)
-        xpEarned = Number.isNaN(totalXp) ? 0 : totalXp
+      // Atomic-like XP Calculation using Ref
+      const nextTotalXp = xpRef.current + xpData.totalXp
+      xpRef.current = nextTotalXp
+      const newLevel = calculateUserLevel(nextTotalXp)
 
-        newCompletions = completions.map((c) =>
-          c.id === existingCompletion.id
-            ? {
-                ...c,
-                count: c.count + 1,
-                completedAt: new Date().toISOString(),
-                xpEarned: xpEarned,
-                streakMultiplier: Number.isNaN(streakMultiplier) ? 1 : streakMultiplier,
-                bonusXp: Number.isNaN(bonusXp) ? 0 : bonusXp,
-              }
-            : c,
+      const tempLog: HabitCompletion = {
+        id: `temp-${Date.now()}`,
+        habitId,
+        date: targetDate,
+        completedAt: new Date(targetDate).toISOString(),
+        xpEarned: xpData.totalXp,
+        streakMultiplier: xpData.streakMultiplier,
+        bonusXp: xpData.bonusXp,
+        count: 1
+      }
+
+      // Update ref immediately for next rapid click
+      completionsRef.current = [...completionsRef.current, tempLog]
+
+      const updatedQuests = stats.currentDailyQuests.map(q =>
+        updateQuestProgress(q,
+          habits.map(h => h.id === habitId ? updatedHabit : h),
+          completionsRef.current,
+          { ...stats, totalXp: nextTotalXp, level: newLevel }
         )
+      )
 
-        if (existingCompletion.count + 1 >= habit.targetCount) {
-          updatedHabit = updateHabitAfterCompletion(habit, streak)
-          if (updatedHabit.evolutionStage !== habit.evolutionStage) {
-            setHabitEvolution({ habit: updatedHabit, newStage: updatedHabit.evolutionStage })
-          }
+      // 4. Update state (Optimistic UI)
+      setHabits(prev => prev.map(h => h.id === habitId ? updatedHabit : h))
+      setStats(prev => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          totalXp: nextTotalXp,
+          level: newLevel,
+          totalCompletions: prev.totalCompletions + 1,
+          currentDailyQuests: updatedQuests,
         }
-      } else {
-        // Create new completion
-        const { totalXp, streakMultiplier, bonusXp } = calculateXpForCompletion(habit, streak)
-        xpEarned = Number.isNaN(totalXp) ? 0 : totalXp
+      })
+      setCompletions(prev => [...prev, tempLog])
 
-        const newCompletion: HabitCompletion = {
-          id: generateId(),
-          habitId,
-          date: targetDate,
-          count: 1,
-          completedAt: new Date().toISOString(),
-          xpEarned: xpEarned,
-          streakMultiplier: Number.isNaN(streakMultiplier) ? 1 : streakMultiplier,
-          bonusXp: Number.isNaN(bonusXp) ? 0 : bonusXp,
-        }
-        newCompletions = [...completions, newCompletion]
-
-        if (habit.targetCount === 1) {
-          updatedHabit = updateHabitAfterCompletion(habit, streak)
-          if (updatedHabit.evolutionStage !== habit.evolutionStage) {
-            setHabitEvolution({ habit: updatedHabit, newStage: updatedHabit.evolutionStage })
-          }
-        }
-      }
-
-      if (xpEarned > 0) {
-        setXpGained({ amount: xpEarned, habitId })
+      if (xpData.totalXp > 0) {
+        setXpGained({ amount: xpData.totalXp, habitId })
         setTimeout(() => setXpGained(null), 2000)
       }
 
-      // Update habit if it changed
-      const newHabits = habits.map((h) => (h.id === habitId ? updatedHabit : h))
-
-      setCompletions(newCompletions)
-      setHabits(newHabits)
-      saveCompletions(newCompletions)
-      saveHabits(newHabits)
-      updateStats(newHabits, newCompletions, xpEarned)
-    },
-    [habits, completions, updateStats],
-  )
-
-  const useGraceToken = useCallback(() => {
-    if ((stats.availableGraceTokens || 0) <= 0) return false
-
-    const newStats = {
-      ...stats,
-      availableGraceTokens: (stats.availableGraceTokens || 0) - 1,
-      graceTokens: (stats.graceTokens || []).map((t, i) =>
-        i === (stats.graceTokens || []).findIndex((token) => !token.usedAt)
-          ? { ...t, usedAt: new Date().toISOString() }
-          : t,
-      ),
-    }
-
-    setStats(newStats)
-    saveStats(newStats)
-    return true
-  }, [stats])
-
-  const claimQuestReward = useCallback(
-    (questId: string) => {
-      const quest = (stats.currentDailyQuests || []).find((q) => q.id === questId)
-      if (!quest || !quest.isCompleted) return
-
-      const newStats = { ...stats }
-
-      // Award XP with NaN protection
-      const xpReward = Number.isNaN(quest.xpReward) ? 0 : quest.xpReward || 0
-      newStats.totalXp = (newStats.totalXp || 0) + xpReward
-      newStats.level = calculateUserLevel(newStats.totalXp)
-
-      newStats.totalPoints = (newStats.totalPoints || 0) + Math.round(xpReward / 2)
-
-      // Award grace tokens if any
-      if (quest.graceTokenReward && quest.graceTokenReward > 0) {
-        const newTokens: GraceToken[] = Array(quest.graceTokenReward)
-          .fill(null)
-          .map(() => ({
-            id: generateId(),
-            earnedAt: new Date().toISOString(),
-            source: "quest" as const,
-          }))
-        newStats.graceTokens = [...(newStats.graceTokens || []), ...newTokens]
-        newStats.availableGraceTokens = (newStats.availableGraceTokens || 0) + quest.graceTokenReward
+      if (updatedHabit.evolutionStage !== habit.evolutionStage) {
+        setHabitEvolution({ habit: updatedHabit, newStage: updatedHabit.evolutionStage })
       }
 
-      // Remove claimed quest and generate new one
-      newStats.currentDailyQuests = (newStats.currentDailyQuests || []).filter((q) => q.id !== questId)
-      newStats.currentDailyQuests = generateDailyQuests(newStats.currentDailyQuests)
+      try {
+        // 5. Persist to Server (Using Ref-based values for correctness)
+        const [logRes, habitRes, statsRes] = await Promise.all([
+          fetch(`/api/habits/${habitId}/logs`, {
+            method: 'POST',
+            body: JSON.stringify({
+              date: targetDate,
+              xp_earned: xpData.totalXp,
+              streak_multiplier: xpData.streakMultiplier,
+              bonus_xp: xpData.bonusXp,
+            })
+          }),
+          fetch(`/api/habits/${habitId}`, {
+            method: 'PATCH',
+            body: JSON.stringify({
+              current_experience: updatedHabit.experience,
+              current_level: updatedHabit.level,
+              evolution_stage: updatedHabit.evolutionStage,
+              is_mastered: updatedHabit.isMastered,
+              health: updatedHabit.health,
+            })
+          }),
+          fetch(`/api/stats`, {
+            method: 'PATCH',
+            body: JSON.stringify({
+              total_xp: nextTotalXp,
+              level: newLevel,
+              total_completions: totalCompletionsRef.current + 1,
+            })
+          })
+        ])
 
-      newStats.questsCompleted = (newStats.questsCompleted || 0) + 1
+        // Update the ref after the successful increment is planned
+        totalCompletionsRef.current += 1
 
-      setStats(newStats)
-      saveStats(newStats)
+        if (logRes.ok) {
+          const actualLog = mapLog(await logRes.json())
+          setCompletions(prev => prev.map(l => l.id === tempLog.id ? actualLog : l))
+        }
+
+        // 6. Persist Quest Progress
+        await Promise.all(
+          updatedQuests.map(q =>
+            fetch(`/api/quests/${q.id}`, {
+              method: 'PATCH',
+              body: JSON.stringify({
+                progress: q.progress,
+                completed: q.isCompleted
+              })
+            })
+          )
+        )
+      } catch (error) {
+        console.error("Failed to toggle completion:", error)
+        // Rollback on error? (Simplified for now)
+      }
     },
-    [stats],
+    [habits, completions, stats]
   )
 
-  const clearNewAchievement = useCallback(() => {
-    setNewAchievement(null)
-  }, [])
+  const deleteHabit = useCallback(
+    async (habitId: string) => {
+      const originalHabits = [...habits]
+      setHabits(prev => prev.filter(h => h.id !== habitId))
 
-  const clearLevelUpData = useCallback(() => {
-    setLevelUpData(null)
-  }, [])
-
-  const clearStreakMilestone = useCallback(() => {
-    setStreakMilestone(null)
-  }, [])
-
-  const clearQuestCompleted = useCallback(() => {
-    setQuestCompleted(null)
-  }, [])
-
-  const clearHabitEvolution = useCallback(() => {
-    setHabitEvolution(null)
-  }, [])
+      try {
+        const res = await fetch(`/api/habits/${habitId}`, { method: 'DELETE' })
+        if (!res.ok) throw new Error("Delete failed")
+      } catch (error) {
+        setHabits(originalHabits)
+        console.error(error)
+      }
+    },
+    [habits]
+  )
 
   return {
     habits,
@@ -451,21 +354,62 @@ export function useHabits() {
     stats,
     isLoaded,
     newAchievement,
-    levelUpData,
-    streakMilestone,
     xpGained,
-    questCompleted,
     habitEvolution,
     addHabit,
-    updateHabit,
     deleteHabit,
     toggleCompletion,
-    useGraceToken,
-    claimQuestReward,
-    clearNewAchievement,
-    clearLevelUpData,
-    clearStreakMilestone,
-    clearQuestCompleted,
-    clearHabitEvolution,
+    claimQuestReward: async (questId: string) => {
+      if (!stats) return
+
+      const quest = stats.currentDailyQuests.find(q => q.id === questId) ||
+        (stats.currentWeeklyChallenge?.id === questId ? stats.currentWeeklyChallenge : null)
+
+      if (!quest || !quest.isCompleted || quest.isClaimed) return
+
+      // 1. Calculate new stats
+      const newTotalXp = stats.totalXp + quest.xpReward
+      const newLevel = calculateUserLevel(newTotalXp)
+      const newGraceTokens = (stats.availableGraceTokens || 0) + (quest.graceTokenReward || 0)
+
+      // 2. Optimistic Update
+      setStats(prev => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          totalXp: newTotalXp,
+          level: newLevel,
+          availableGraceTokens: newGraceTokens,
+          questsCompleted: prev.questsCompleted + 1,
+          currentDailyQuests: prev.currentDailyQuests.map(q => q.id === questId ? { ...q, isClaimed: true } : q),
+          currentWeeklyChallenge: prev.currentWeeklyChallenge?.id === questId
+            ? { ...prev.currentWeeklyChallenge, isClaimed: true }
+            : prev.currentWeeklyChallenge
+        }
+      })
+
+      try {
+        // 3. Persist to Server
+        await Promise.all([
+          fetch(`/api/quests/${questId}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ claimed: true })
+          }),
+          fetch(`/api/stats`, {
+            method: 'PATCH',
+            body: JSON.stringify({
+              total_xp: newTotalXp,
+              level: newLevel,
+              available_grace_tokens: newGraceTokens,
+              quests_completed: stats.questsCompleted + 1
+            })
+          })
+        ])
+      } catch (error) {
+        console.error("Failed to claim quest reward:", error)
+      }
+    },
+    clearNewAchievement: () => setNewAchievement(null),
+    clearHabitEvolution: () => setHabitEvolution(null),
   }
 }

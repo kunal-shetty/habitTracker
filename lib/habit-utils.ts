@@ -15,7 +15,15 @@ export function getCompletionForHabitOnDate(
   habitId: string,
   date: string,
 ): HabitCompletion | undefined {
-  return completions.find((c) => c.habitId === habitId && c.date === date)
+  const matching = completions.filter((c) => c.habitId === habitId && c.date === date)
+  if (matching.length === 0) return undefined
+
+  // Return the first one as base but sum the counts
+  const totalCount = matching.reduce((acc, curr) => acc + (curr.count || 1), 0)
+  return {
+    ...matching[0],
+    count: totalCount
+  }
 }
 
 export function isHabitCompletedForDate(completions: HabitCompletion[], habit: Habit, date: string): boolean {

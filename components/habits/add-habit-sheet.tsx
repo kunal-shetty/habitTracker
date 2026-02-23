@@ -140,6 +140,7 @@ export function AddHabitSheet({
     <AnimatePresence>
       {isOpen && (
         <motion.div
+          key="add-habit-sheet-overlay"
           className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/50"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -263,11 +264,10 @@ export function AddHabitSheet({
                             <motion.button
                               key={cat}
                               type="button"
-                              className={`flex flex-col items-center gap-1 rounded-xl p-3 transition-colors ${
-                                category === cat
-                                  ? "bg-primary text-primary-foreground"
-                                  : "bg-muted text-foreground hover:bg-muted/80"
-                              }`}
+                              className={`flex flex-col items-center gap-1 rounded-xl p-3 transition-colors ${category === cat
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-muted text-foreground hover:bg-muted/80"
+                                }`}
                               onClick={() => {
                                 setCategory(cat)
                                 setColor(config.color)
@@ -343,11 +343,10 @@ export function AddHabitSheet({
                           <motion.button
                             key={iconName}
                             type="button"
-                            className={`flex h-12 w-full items-center justify-center rounded-xl transition-colors ${
-                              icon === iconName
-                                ? "bg-foreground text-background"
-                                : "bg-muted text-foreground hover:bg-muted/80"
-                            }`}
+                            className={`flex h-12 w-full items-center justify-center rounded-xl transition-colors ${icon === iconName
+                              ? "bg-foreground text-background"
+                              : "bg-muted text-foreground hover:bg-muted/80"
+                              }`}
                             onClick={() => setIcon(iconName)}
                             whileTap={{ scale: 0.9 }}
                           >
@@ -385,9 +384,8 @@ export function AddHabitSheet({
                             <motion.button
                               key={diff}
                               type="button"
-                              className={`rounded-xl py-3 text-center transition-colors ${
-                                difficulty === diff ? "text-white" : "bg-muted text-foreground"
-                              }`}
+                              className={`rounded-xl py-3 text-center transition-colors ${difficulty === diff ? "text-white" : "bg-muted text-foreground"
+                                }`}
                               style={{
                                 backgroundColor: difficulty === diff ? config.color : undefined,
                               }}
@@ -410,9 +408,8 @@ export function AddHabitSheet({
                           <motion.button
                             key={freq}
                             type="button"
-                            className={`rounded-xl py-3 text-sm font-medium transition-colors ${
-                              frequency === freq ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
-                            }`}
+                            className={`rounded-xl py-3 text-sm font-medium transition-colors ${frequency === freq ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
+                              }`}
                             onClick={() => setFrequency(freq)}
                             whileTap={{ scale: 0.95 }}
                           >
@@ -436,11 +433,10 @@ export function AddHabitSheet({
                             <motion.button
                               key={day}
                               type="button"
-                              className={`flex-1 rounded-lg py-2 text-xs font-medium transition-colors ${
-                                targetDays.includes(index)
-                                  ? "bg-primary text-primary-foreground"
-                                  : "bg-muted text-muted-foreground"
-                              }`}
+                              className={`flex-1 rounded-lg py-2 text-xs font-medium transition-colors ${targetDays.includes(index)
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-muted text-muted-foreground"
+                                }`}
                               onClick={() => toggleDay(index)}
                               whileTap={{ scale: 0.9 }}
                             >
@@ -476,9 +472,8 @@ export function AddHabitSheet({
                         <Label>Daily reminder</Label>
                         <motion.button
                           type="button"
-                          className={`relative h-7 w-12 rounded-full transition-colors ${
-                            reminderEnabled ? "bg-primary" : "bg-muted"
-                          }`}
+                          className={`relative h-7 w-12 rounded-full transition-colors ${reminderEnabled ? "bg-primary" : "bg-muted"
+                            }`}
                           onClick={() => setReminderEnabled(!reminderEnabled)}
                         >
                           <motion.div
@@ -523,6 +518,7 @@ export function AddHabitSheet({
 
       {/* Habit Templates Modal */}
       <HabitTemplatesModal
+        key="habit-templates-modal"
         isOpen={showTemplates}
         onClose={() => setShowTemplates(false)}
         onSelectTemplate={handleTemplateSelect}

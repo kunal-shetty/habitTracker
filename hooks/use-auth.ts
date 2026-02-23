@@ -1,131 +1,89 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import type { User, AuthState } from "@/lib/types"
-import { getAuthState, saveAuthState, clearAuthState } from "@/lib/storage"
+import type { User } from "@/lib/types"
+import { createClient } from "@/lib/supabase-client"
 
 export function useAuth() {
-  const [authState, setAuthState] = useState<AuthState>({
-    user: null,
-    isAuthenticated: false,
-    token: null,
-  })
+  const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const supabase = createClient()
+
+  const mapSupabaseUser = (sbUser: any): User | null => {
+    if (!sbUser) return null
+    return {
+      id: sbUser.id,
+      email: sbUser.email || "",
+      name: sbUser.user_metadata?.full_name || sbUser.user_metadata?.name || sbUser.email?.split("@")[0] || "Habit Hero",
+      avatar: sbUser.user_metadata?.avatar_url || sbUser.user_metadata?.picture || null,
+      createdAt: sbUser.created_at,
+    }
+  }
 
   useEffect(() => {
-    const state = getAuthState()
-    setAuthState(state)
-    setIsLoading(false)
-  }, [])
+    async function getInitialSession() {
+      const { data: { session } } = await supabase.auth.getSession()
+      setUser(mapSupabaseUser(session?.user))
+      setIsLoading(false)
+    }
+
+    getInitialSession()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(mapSupabaseUser(session?.user))
+      setIsLoading(false)
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [supabase])
 
   const login = useCallback(async (email: string, password: string) => {
     setIsLoading(true)
-    try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      })
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || "Login failed")
-      }
-
-      const newState: AuthState = {
-        user: data.user,
-        isAuthenticated: true,
-        token: data.token,
-      }
-      setAuthState(newState)
-      saveAuthState(newState)
-      return { success: true }
-    } catch (error) {
-      return { success: false, error: error instanceof Error ? error.message : "Login failed" }
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    setIsLoading(false)
+    if (error) return { success: false, error: error.message }
+    return { success: true }
+  }, [supabase])
 
   const signup = useCallback(async (email: string, password: string, name: string) => {
     setIsLoading(true)
-    try {
-      const response = await fetch("/api/auth/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, name }),
-      })
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || "Signup failed")
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: name,
+        }
       }
-
-      const newState: AuthState = {
-        user: data.user,
-        isAuthenticated: true,
-        token: data.token,
-      }
-      setAuthState(newState)
-      saveAuthState(newState)
-      return { success: true }
-    } catch (error) {
-      return { success: false, error: error instanceof Error ? error.message : "Signup failed" }
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
+    })
+    setIsLoading(false)
+    if (error) return { success: false, error: error.message }
+    return { success: true }
+  }, [supabase])
 
   const logout = useCallback(async () => {
-    try {
-      await fetch("/api/auth/logout", { method: "POST" })
-    } catch {
-      // Ignore logout API errors
-    }
-    clearAuthState()
-    setAuthState({
-      user: null,
-      isAuthenticated: false,
-      token: null,
-    })
-  }, [])
+    await supabase.auth.signOut()
+  }, [supabase])
 
   const updateProfile = useCallback(
     async (updates: Partial<User>) => {
-      if (!authState.user) return { success: false, error: "Not authenticated" }
-
-      try {
-        const response = await fetch("/api/auth/profile", {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${authState.token}`,
-          },
-          body: JSON.stringify(updates),
-        })
-        const data = await response.json()
-
-        if (!response.ok) {
-          throw new Error(data.error || "Update failed")
+      const { data, error } = await supabase.auth.updateUser({
+        data: {
+          full_name: updates.name,
+          avatar_url: updates.avatar,
         }
-
-        const newState: AuthState = {
-          ...authState,
-          user: { ...authState.user, ...data.user },
-        }
-        setAuthState(newState)
-        saveAuthState(newState)
-        return { success: true }
-      } catch (error) {
-        return { success: false, error: error instanceof Error ? error.message : "Update failed" }
-      }
+      })
+      if (error) return { success: false, error: error.message }
+      return { success: true }
     },
-    [authState],
+    [supabase],
   )
 
   return {
-    user: authState.user,
-    isAuthenticated: authState.isAuthenticated,
+    user,
+    isAuthenticated: !!user,
     isLoading,
     login,
     signup,

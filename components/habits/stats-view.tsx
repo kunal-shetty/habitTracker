@@ -14,6 +14,7 @@ import {
   isHabitCompletedForDate,
 } from "@/lib/habit-utils"
 import { getXpProgressToNextLevel } from "@/lib/gamification-utils"
+import { EmptyState } from "./empty-state"
 
 interface StatsViewProps {
   habits: Habit[]
@@ -23,6 +24,18 @@ interface StatsViewProps {
 
 export function StatsView({ habits, completions, stats }: StatsViewProps) {
   const activeHabits = habits.filter((h) => !h.archived)
+
+  if (activeHabits.length === 0) {
+    return (
+      <EmptyState
+        title="No Stats Yet"
+        description="Complete your first habit to see your progress and stats here!"
+        icon={Target}
+        actionLabel="Go to Dashboard"
+        onAction={() => window.location.hash = "#home"} // Simple way to suggest going home
+      />
+    )
+  }
 
   const weeklyData = useMemo(() => {
     const data = []
