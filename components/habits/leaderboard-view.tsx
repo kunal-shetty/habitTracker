@@ -128,7 +128,7 @@ export function LeaderboardView() {
               <span className="text-xs font-bold">2nd</span>
             </div>
             <p className="mt-1 text-xs font-medium truncate w-20 text-center">{leaderboardData[1].name.split(" ")[0]}</p>
-            <p className="text-[10px] text-muted-foreground">{leaderboardData[1].xp.toLocaleString()} XP</p>
+            <p className="text-[10px] text-muted-foreground">{leaderboardData[1].xp.toLocaleString()} {activeTab === "weekly" ? "Weekly" : ""} XP</p>
           </div>
 
           {/* 1st Place */}
@@ -152,7 +152,7 @@ export function LeaderboardView() {
               <span className="text-sm font-bold">1st</span>
             </div>
             <p className="mt-1 text-sm font-bold truncate w-24 text-center">{leaderboardData[0].name.split(" ")[0]}</p>
-            <p className="text-xs text-muted-foreground">{leaderboardData[0].xp.toLocaleString()} XP</p>
+            <p className="text-xs text-muted-foreground">{leaderboardData[0].xp.toLocaleString()} {activeTab === "weekly" ? "Weekly" : ""} XP</p>
           </div>
 
           {/* 3rd Place */}
@@ -167,7 +167,7 @@ export function LeaderboardView() {
               <span className="text-xs font-bold">3rd</span>
             </div>
             <p className="mt-1 text-xs font-medium truncate w-20 text-center">{leaderboardData[2].name.split(" ")[0]}</p>
-            <p className="text-[10px] text-muted-foreground">{leaderboardData[2].xp.toLocaleString()} XP</p>
+            <p className="text-[10px] text-muted-foreground">{leaderboardData[2].xp.toLocaleString()} {activeTab === "weekly" ? "Weekly" : ""} XP</p>
           </div>
         </motion.div>
       )}
@@ -223,7 +223,7 @@ export function LeaderboardView() {
             {/* XP */}
             <div className="text-right">
               <p className="font-bold">{entry.xp.toLocaleString()}</p>
-              <p className="text-[10px] text-muted-foreground">XP</p>
+              <p className="text-[10px] text-muted-foreground">{activeTab === "weekly" ? "Weekly XP" : "Total XP"}</p>
             </div>
           </motion.div>
         ))}

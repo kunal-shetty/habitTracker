@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Plus, Calendar, BarChart3, Settings, Home, Scroll, User, Trophy } from "lucide-react"
+import { Plus, Calendar, BarChart3, Settings, Home, Scroll, User, Trophy, Users, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useHabits } from "@/hooks/use-habits"
 import { useOnboarding } from "@/hooks/use-onboarding"
@@ -21,6 +21,7 @@ import { EvolutionModal } from "./evolution-modal"
 import { ComebackModal } from "./comeback-modal"
 import { NotificationNudge } from "./notification-nudge"
 import { PremiumUpgradeModal } from "./premium-upgrade-modal"
+import { FriendsView } from "./friends-view"
 import { ACHIEVEMENTS } from "@/lib/constants"
 import {
   calculateOverallStreak,
@@ -30,7 +31,7 @@ import {
   calculateStreak,
 } from "@/lib/habit-utils"
 
-type TabType = "home" | "quests" | "calendar" | "stats" | "profile" | "settings"
+type TabType = "home" | "quests" | "calendar" | "stats" | "profile" | "settings" | "friends"
 
 import { createClient } from "@/lib/supabase-client"
 import { useRouter } from "next/navigation"
@@ -109,9 +110,9 @@ export function HabitDashboard() {
   const tabs = [
     { id: "home" as const, icon: Home, label: "Home" },
     { id: "quests" as const, icon: Scroll, label: "Quests" },
-    { id: "calendar" as const, icon: Calendar, label: "Calendar" },
+    { id: "friends" as const, icon: Users, label: "Social" },
     { id: "stats" as const, icon: BarChart3, label: "Stats" },
-    { id: "profile" as const, icon: User, label: "Profile" },
+    { id: "profile" as const, icon: User, label: "Me" },
   ]
 
   return (
@@ -127,7 +128,7 @@ export function HabitDashboard() {
       {activeTab !== "home" && (
         <header className="flex items-center justify-between border-b border-border bg-background px-4 py-4">
           <h1 className="text-xl font-bold capitalize text-foreground">
-            {showLeaderboard ? "Leaderboard" : activeTab}
+            {showLeaderboard ? "Leaderboard" : activeTab === "friends" ? "Community" : activeTab}
           </h1>
           {(activeTab === "stats" || activeTab === "profile") && !showLeaderboard && (
             <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => setShowLeaderboard(true)}>
@@ -216,6 +217,25 @@ export function HabitDashboard() {
               className="p-4"
             >
               <ProfileView stats={stats} unlockedAchievements={unlockedAchievements} />
+
+              {/* Friends Section Link */}
+              <motion.button
+                className="mt-4 flex w-full items-center justify-between rounded-xl bg-card p-4 shadow-sm border border-primary/10"
+                onClick={() => setActiveTab("friends" as TabType)}
+                whileTap={{ scale: 0.98 }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <Users className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="text-left">
+                    <span className="font-bold block">Community</span>
+                    <span className="text-[10px] text-muted-foreground">Manage friends & habit groups</span>
+                  </div>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </motion.button>
+
               {/* Settings link at bottom of profile */}
               <motion.button
                 className="mt-4 flex w-full items-center justify-between rounded-xl bg-card p-4 shadow-sm"
@@ -228,6 +248,18 @@ export function HabitDashboard() {
                 </div>
                 <span className="text-muted-foreground">→</span>
               </motion.button>
+            </motion.div>
+          )}
+
+          {activeTab === "friends" && (
+            <motion.div
+              key="friends"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="p-4"
+            >
+              <FriendsView />
             </motion.div>
           )}
 

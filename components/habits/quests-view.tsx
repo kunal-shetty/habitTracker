@@ -1,11 +1,13 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { Scroll, Trophy, Calendar, Star, Shield, Zap } from "lucide-react"
+import { Scroll, Trophy, Calendar, Star, Shield, Zap, Crown } from "lucide-react"
 import type { Quest } from "@/lib/types"
 import { QuestCard } from "./quest-card"
 import { GraceTokenIndicator } from "./grace-token-indicator"
 import { EmptyState } from "./empty-state"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 
 interface QuestsViewProps {
   dailyQuests: Quest[]
@@ -102,6 +104,28 @@ export function QuestsView({
           <QuestCard quest={monthlyTheme} onClaim={() => onClaimReward(monthlyTheme.id)} />
         </motion.div>
       )}
+
+      {/* Monthly Leaderboard Rewards Notice */}
+      <motion.div
+        className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-5 space-y-3"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.45 }}
+      >
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-amber-500/20">
+            <Crown className="h-5 w-5 text-amber-500" />
+          </div>
+          <h3 className="font-bold text-amber-800 dark:text-amber-400">Monthly Series Reward</h3>
+        </div>
+        <p className="text-sm text-balance text-muted-foreground">
+          Finish in the <span className="font-bold text-foreground">Top 3</span> of the Monthly Global Leaderboard to unlock the exclusive <span className="font-bold text-primary">"Legendary Hero"</span> theme and earn <span className="font-bold text-amber-600">500 Bonus XP</span>!
+        </p>
+        <div className="flex items-center justify-between pt-2">
+          <Badge variant="outline" className="text-[10px] border-amber-500/30 text-amber-700 bg-amber-500/10 uppercase font-bold tracking-tight">Ends in 6 days</Badge>
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-amber-700 hover:text-amber-800 font-bold" onClick={() => window.location.hash = "#stats"}>View Standings</Button>
+        </div>
+      </motion.div>
 
       {/* Grace Token info */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>

@@ -235,7 +235,7 @@ export function StatsView({ habits, completions, stats }: StatsViewProps) {
                   className="flex h-8 w-8 items-center justify-center rounded-lg"
                   style={{ backgroundColor: item.habit.color }}
                 >
-                  <span className="text-xs font-bold text-white">L{item.habit.level}</span>
+                  <span className="text-[10px] font-black text-white uppercase">Lv.{item.habit.level || 1}</span>
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">

@@ -18,6 +18,7 @@ import {
   generateWeeklyChallenge,
   updateQuestProgress,
   calculateUserLevel,
+  checkAchievements,
   createDefaultHabit,
 } from "@/lib/gamification-utils"
 import { ACHIEVEMENTS } from "@/lib/constants"
@@ -79,8 +80,8 @@ export function useHabits() {
     isMastered: h.is_mastered ?? false,
     createdAt: h.created_at ?? new Date().toISOString(),
     evolutionStage: h.evolution_stage ?? "seed",
-    level: h.level ?? 1,
-    experience: h.experience ?? 0,
+    level: h.current_level ?? h.level ?? 1,
+    experience: h.current_experience ?? h.experience ?? 0,
     health: h.health ?? 100,
     maxHealth: h.max_health ?? 100,
   })
@@ -251,17 +252,32 @@ export function useHabits() {
 
       // 4. Update state (Optimistic UI)
       setHabits(prev => prev.map(h => h.id === habitId ? updatedHabit : h))
-      setStats(prev => {
-        if (!prev) return prev
-        return {
-          ...prev,
-          totalXp: nextTotalXp,
-          level: newLevel,
-          totalCompletions: prev.totalCompletions + 1,
-          currentDailyQuests: updatedQuests,
-        }
-      })
+      
+      const nextStats = {
+        ...stats,
+        totalXp: nextTotalXp,
+        level: newLevel,
+        totalCompletions: stats.totalCompletions + 1,
+        currentDailyQuests: updatedQuests,
+      }
+
+      setStats(nextStats)
       setCompletions(prev => [...prev, tempLog])
+
+      // Check for New Achievements
+      const unlockedAchIds = stats.achievements || []
+      const newAch = checkAchievements(nextStats, unlockedAchIds)
+      
+      if (newAch.length > 0) {
+        setNewAchievement(newAch[0].id)
+        // Persist achievements
+        newAch.forEach((a) => {
+          fetch('/api/users/achievements', {
+            method: 'POST',
+            body: JSON.stringify({ achievement_id: a.id })
+          })
+        })
+      }
 
       if (xpData.totalXp > 0) {
         setXpGained({ amount: xpData.totalXp, habitId })
@@ -372,21 +388,35 @@ export function useHabits() {
       const newLevel = calculateUserLevel(newTotalXp)
       const newGraceTokens = (stats.availableGraceTokens || 0) + (quest.graceTokenReward || 0)
 
+      const nextStats = {
+        ...stats,
+        totalXp: newTotalXp,
+        level: newLevel,
+        availableGraceTokens: newGraceTokens,
+        questsCompleted: stats.questsCompleted + 1,
+        currentDailyQuests: stats.currentDailyQuests.map(q => q.id === questId ? { ...q, isClaimed: true } : q),
+        currentWeeklyChallenge: stats.currentWeeklyChallenge?.id === questId
+          ? { ...stats.currentWeeklyChallenge, isClaimed: true }
+          : stats.currentWeeklyChallenge
+      }
+
       // 2. Optimistic Update
-      setStats(prev => {
-        if (!prev) return prev
-        return {
-          ...prev,
-          totalXp: newTotalXp,
-          level: newLevel,
-          availableGraceTokens: newGraceTokens,
-          questsCompleted: prev.questsCompleted + 1,
-          currentDailyQuests: prev.currentDailyQuests.map(q => q.id === questId ? { ...q, isClaimed: true } : q),
-          currentWeeklyChallenge: prev.currentWeeklyChallenge?.id === questId
-            ? { ...prev.currentWeeklyChallenge, isClaimed: true }
-            : prev.currentWeeklyChallenge
-        }
-      })
+      setStats(nextStats)
+
+      // Check for New Achievements
+      const unlockedAchIds = stats.achievements || []
+      const newAch = checkAchievements(nextStats, unlockedAchIds)
+
+      if (newAch.length > 0) {
+        setNewAchievement(newAch[0].id)
+        // Persist achievements
+        newAch.forEach((a) => {
+          fetch('/api/users/achievements', {
+            method: 'POST',
+            body: JSON.stringify({ achievement_id: a.id })
+          })
+        })
+      }
 
       try {
         // 3. Persist to Server

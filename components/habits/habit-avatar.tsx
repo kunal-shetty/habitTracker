@@ -4,6 +4,7 @@ import { motion } from "framer-motion"
 import type { EvolutionStage } from "@/lib/types"
 import { EVOLUTION_CONFIG } from "@/lib/constants"
 import { Sprout, Leaf, Flower, TreesIcon, Sparkles, Heart } from "lucide-react"
+import * as Icons from "lucide-react"
 
 interface HabitAvatarProps {
   stage: EvolutionStage
@@ -12,6 +13,7 @@ interface HabitAvatarProps {
   level: number
   power: number
   color: string
+  iconName?: string // New prop
   isAnimating?: boolean
   size?: "sm" | "md" | "lg"
 }
@@ -31,11 +33,14 @@ export function HabitAvatar({
   level,
   power,
   color,
+  iconName,
   isAnimating = false,
   size = "md",
 }: HabitAvatarProps) {
   const config = EVOLUTION_CONFIG[stage]
-  const Icon = stageIcons[stage]
+
+  // Prioritize custom iconName, then stage-based icon
+  const Icon = (iconName && Icons[iconName as keyof typeof Icons] ? Icons[iconName as keyof typeof Icons] : stageIcons[stage]) as any
   const healthPercent = (health / maxHealth) * 100
   const isDead = health <= 0
 
@@ -73,9 +78,9 @@ export function HabitAvatar({
         animate={
           isAnimating
             ? {
-                scale: [1, 1.1, 1],
-                rotate: [0, 5, -5, 0],
-              }
+              scale: [1, 1.1, 1],
+              rotate: [0, 5, -5, 0],
+            }
             : undefined
         }
         transition={{ duration: 0.5 }}

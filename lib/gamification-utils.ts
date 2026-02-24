@@ -9,6 +9,7 @@ import {
   STREAK_MILESTONES,
   QUEST_TEMPLATES,
   LEVEL_THRESHOLDS,
+  ACHIEVEMENTS,
 } from "./constants"
 import { generateId, getTodayString } from "./habit-utils"
 import { parseISO, differenceInDays, startOfWeek, endOfWeek } from "date-fns"
@@ -336,4 +337,40 @@ export function createDefaultHabit(
     evolutionStage: "seed",
     isMastered: false,
   }
+}
+// Check for new achievements
+export function checkAchievements(
+  stats: UserStats,
+  unlockedIds: string[],
+): (typeof ACHIEVEMENTS)[number][] {
+  const newUnlocks: (typeof ACHIEVEMENTS)[number][] = []
+
+  ACHIEVEMENTS.forEach((achievement) => {
+    if (unlockedIds.includes(achievement.id)) return
+
+    let isUnlocked = false
+    switch (achievement.type) {
+      case "habits":
+        // This needs current active habits count, might need to be passed in
+        break
+      case "completions":
+        if (stats.totalCompletions >= achievement.requirement) isUnlocked = true
+        break
+      case "streak":
+        if (stats.currentOverallStreak >= achievement.requirement) isUnlocked = true
+        break
+      case "level":
+        if (stats.level >= achievement.requirement) isUnlocked = true
+        break
+      case "quest":
+        if (stats.questsCompleted >= achievement.requirement) isUnlocked = true
+        break
+    }
+
+    if (isUnlocked) {
+      newUnlocks.push(achievement)
+    }
+  })
+
+  return newUnlocks
 }

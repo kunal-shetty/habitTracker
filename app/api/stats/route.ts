@@ -33,6 +33,19 @@ export async function GET() {
 
     // AUTO-ASSIGN QUESTS: If no daily quests, assign 3 random ones
     const dailyQuests = userQuests.filter(uq => uq.quests?.type === 'daily')
+    const weeklyQuest = userQuests.filter(uq => uq.quests?.type === 'weekly')
+
+    let newQuestsAssigned = false
+    const assignments: any[] = []
+    const expiresAtDaily = new Date()
+    expiresAtDaily.setHours(23, 59, 59, 999)
+
+    // Weekly expiration (end of week)
+    const expiresAtWeekly = new Date()
+    expiresAtWeekly.setDate(expiresAtWeekly.getDate() + (7 - expiresAtWeekly.getDay()))
+    expiresAtWeekly.setHours(23, 59, 59, 999)
+
+    // 1. Check Daily
     if (dailyQuests.length === 0) {
       const { data: templates } = await supabase
         .from("quests")
@@ -42,25 +55,49 @@ export async function GET() {
 
       if (templates && templates.length > 0) {
         const selected = templates.sort(() => 0.5 - Math.random()).slice(0, 3)
-        const expiresAt = new Date()
-        expiresAt.setHours(23, 59, 59, 999)
-
-        const assignments = selected.map(q => ({
+        selected.forEach(q => assignments.push({
           user_id: user.id,
           quest_id: q.id,
-          expires_at: expiresAt.toISOString(),
+          expires_at: expiresAtDaily.toISOString(),
           progress: 0,
           completed: false
         }))
+        newQuestsAssigned = true
+      }
+    }
 
-        const { data: newAssignments, error: assignError } = await supabase
-          .from("user_quests")
-          .insert(assignments)
-          .select("*, quests(*)")
+    // 2. Check Weekly
+    if (weeklyQuest.length === 0) {
+      const { data: templates } = await supabase
+        .from("quests")
+        .select("*")
+        .eq("type", "weekly")
+        .limit(5)
 
-        if (!assignError && newAssignments) {
-          userQuests = [...userQuests, ...newAssignments]
-        }
+      if (templates && templates.length > 0) {
+        const selected = templates[Math.floor(Math.random() * templates.length)]
+        assignments.push({
+          user_id: user.id,
+          quest_id: selected.id,
+          expires_at: expiresAtWeekly.toISOString(),
+          progress: 0,
+          completed: false
+        })
+        newQuestsAssigned = true
+      }
+    }
+
+    if (newQuestsAssigned) {
+      const { data: newAssignments, error: assignError } = await supabase
+        .from("user_quests")
+        .insert(assignments)
+        .select("*, quests(*)")
+
+      if (!assignError && newAssignments) {
+        // Merge without duplicates
+        const existingIds = new Set(userQuests.map(uq => uq.quest_id))
+        const trulyNew = newAssignments.filter(na => !existingIds.has(na.quest_id))
+        userQuests = [...userQuests, ...trulyNew]
       }
     }
 

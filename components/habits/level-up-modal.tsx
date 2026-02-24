@@ -111,7 +111,7 @@ export function LevelUpModal({ level, isOpen, onClose }: LevelUpModalProps) {
             </button>
 
             {/* Animated rays background */}
-            <div className="absolute inset-0 overflow-hidden">
+            <div className="pointer-events-none absolute inset-0 overflow-hidden">
               {[...Array(12)].map((_, i) => (
                 <motion.div
                   key={i}
@@ -135,7 +135,7 @@ export function LevelUpModal({ level, isOpen, onClose }: LevelUpModalProps) {
             </div>
 
             {/* Animated stars */}
-            <div className="absolute inset-0 overflow-hidden">
+            <div className="pointer-events-none absolute inset-0 overflow-hidden">
               {[...Array(10)].map((_, i) => (
                 <motion.div
                   key={i}

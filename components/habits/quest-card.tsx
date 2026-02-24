@@ -1,9 +1,10 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { Clock, Zap, Shield, Gift } from "lucide-react"
+import { Clock, Zap, Shield, Gift, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
+import { Badge } from "@/components/ui/badge"
 import type { Quest } from "@/lib/types"
 import { DIFFICULTY_CONFIG } from "@/lib/constants"
 import { formatDistanceToNow } from "date-fns"
@@ -78,7 +79,12 @@ export function QuestCard({ quest, onClaim }: QuestCardProps) {
         </div>
 
         {/* Timer or claim button */}
-        {quest.isCompleted ? (
+        {quest.isClaimed ? (
+          <Badge variant="outline" className="gap-1 border-green-500/50 text-green-600 bg-green-50">
+            <Check className="h-3 w-3" />
+            Claimed
+          </Badge>
+        ) : quest.isCompleted ? (
           <Button size="sm" className="gap-1 bg-green-600 hover:bg-green-700" onClick={onClaim}>
             <Gift className="h-4 w-4" />
             Claim

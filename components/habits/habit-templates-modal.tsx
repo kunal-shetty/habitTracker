@@ -110,42 +110,44 @@ export function HabitTemplatesModal({ isOpen, onClose, onSelectTemplate }: Habit
             </div>
 
             {/* Categories */}
-            <ScrollArea className="horizontal-scroll border-b border-border">
-              <div className="flex gap-2 p-4">
-                {categories.map((category) => {
-                  const isActive = selectedCategory === category
-                  const config = category === "all" ? null : CATEGORY_CONFIG[category]
+            <div className="border-b border-border">
+              <ScrollArea className="w-full">
+                <div className="flex gap-2 p-4">
+                  {categories.map((category) => {
+                    const isActive = selectedCategory === category
+                    const config = category === "all" ? null : CATEGORY_CONFIG[category]
 
-                  return (
-                    <button
-                      key={category}
-                      onClick={() => setSelectedCategory(category)}
-                      className={`flex items-center gap-2 whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors ${isActive
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                        }`}
-                    >
-                      {category === "all" ? (
-                        <>
-                          <TrendingUp className="h-4 w-4" />
-                          Popular
-                        </>
-                      ) : (
-                        <>
-                          {config?.icon && React.createElement(Icons[config.icon as keyof typeof Icons] as any, {
-                            className: "h-4 w-4",
-                          })}
-                          {config?.label}
-                        </>
-                      )}
-                    </button>
-                  )
-                })}
-              </div>
-            </ScrollArea>
+                    return (
+                      <button
+                        key={category}
+                        onClick={() => setSelectedCategory(category)}
+                        className={`flex items-center gap-2 whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors ${isActive
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                          }`}
+                      >
+                        {category === "all" ? (
+                          <>
+                            <TrendingUp className="h-4 w-4" />
+                            Popular
+                          </>
+                        ) : (
+                          <>
+                            {config?.icon && React.createElement(Icons[config.icon as keyof typeof Icons] as any, {
+                              className: "h-4 w-4",
+                            })}
+                            {config?.label}
+                          </>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              </ScrollArea>
+            </div>
 
             {/* Templates List */}
-            <ScrollArea className="max-h-[400px]">
+            <ScrollArea className="h-[400px] sm:h-[500px]">
               <div className="p-4">
                 {templates.length === 0 ? (
                   <div className="py-12 text-center text-muted-foreground">

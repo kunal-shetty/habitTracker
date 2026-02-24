@@ -84,13 +84,12 @@ export function HabitCard({ habit, completions, onToggle, onDelete, xpGained }: 
   return (
     <>
       <motion.div
-        className={`relative overflow-hidden rounded-xl border bg-card shadow-sm transition-colors ${
-          isCompleted
+        className={`relative overflow-hidden rounded-xl border bg-card shadow-sm transition-colors ${isCompleted
             ? "border-primary/30 bg-primary/5"
             : isDead
               ? "border-red-300 bg-red-50/50 dark:border-red-900 dark:bg-red-950/30"
               : "border-border"
-        }`}
+          }`}
         layout
         whileTap={{ scale: 0.98 }}
         onClick={() => setShowDetails(!showDetails)}
@@ -115,15 +114,15 @@ export function HabitCard({ habit, completions, onToggle, onDelete, xpGained }: 
               level={safeLevel}
               power={safePower}
               color={habit.color}
+              iconName={habit.icon} // Pass custom icon
               isAnimating={showCelebration}
               size="md"
             />
 
             {/* Tap to complete overlay */}
             <motion.button
-              className={`absolute inset-0 flex items-center justify-center rounded-full opacity-0 transition-opacity hover:opacity-100 ${
-                isCompleted ? "bg-primary/80 cursor-not-allowed" : "bg-muted/80"
-              }`}
+              className={`absolute inset-0 flex items-center justify-center rounded-full opacity-0 transition-opacity hover:opacity-100 ${isCompleted ? "bg-primary/80 cursor-not-allowed" : "bg-muted/80"
+                }`}
               onClick={(e) => {
                 e.stopPropagation()
                 handleToggle()

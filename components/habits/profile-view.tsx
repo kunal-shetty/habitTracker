@@ -33,6 +33,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { useAuth } from "@/hooks/use-auth"
 import type { Achievement, UserStats } from "@/lib/types"
 import { ACHIEVEMENTS, RARITY_COLORS } from "@/lib/constants"
@@ -46,6 +47,7 @@ export function ProfileView({ stats, unlockedAchievements }: ProfileViewProps) {
   const { user, updateProfile } = useAuth()
   const [isEditing, setIsEditing] = useState(false)
   const [editName, setEditName] = useState(user?.name || "")
+  const [editBio, setEditBio] = useState((user as any)?.description || "")
   const [showShareModal, setShowShareModal] = useState(false)
 
   const safeLevel = Number.isNaN(stats.level) ? 1 : stats.level || 1
@@ -56,8 +58,29 @@ export function ProfileView({ stats, unlockedAchievements }: ProfileViewProps) {
 
   const handleSave = async () => {
     if (editName.trim()) {
-      await updateProfile({ name: editName.trim() })
-      setIsEditing(false)
+      try {
+        // Update Auth Metadata
+        await updateProfile({
+          name: editName.trim(),
+          description: editBio.trim()
+        } as any)
+
+        // Update Profiles table for Leaderboard
+        const res = await fetch("/api/users/profile", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            full_name: editName.trim(),
+            username: editName.trim().toLowerCase().replace(/\s+/g, "_"),
+          }),
+        })
+
+        if (!res.ok) throw new Error("Failed to update profile table")
+
+        setIsEditing(false)
+      } catch (error) {
+        console.error("Profile update failed:", error)
+      }
     }
   }
 
@@ -146,27 +169,49 @@ export function ProfileView({ stats, unlockedAchievements }: ProfileViewProps) {
           {/* Name and rank */}
           <div className="flex-1">
             {isEditing ? (
-              <div className="flex gap-2">
-                <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="h-9" autoFocus />
-                <Button size="sm" onClick={handleSave}>
-                  Save
-                </Button>
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase">Username</label>
+                  <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="h-9" autoFocus />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase">Description</label>
+                  <Textarea
+                    value={editBio}
+                    onChange={(e) => setEditBio(e.target.value.slice(0, 160))}
+                    placeholder="Tell your story..."
+                    className="text-xs resize-none"
+                    rows={2}
+                  />
+                  <p className="text-[10px] text-right text-muted-foreground">{editBio.length}/160</p>
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={handleSave} className="flex-1">Save</Button>
+                  <Button size="sm" variant="ghost" onClick={() => setIsEditing(false)}>Cancel</Button>
+                </div>
               </div>
             ) : (
-              <div className="flex items-center gap-2">
-                <h2 className="text-xl font-bold">{user?.name || "Habit Hero"}</h2>
-                <button onClick={() => setIsEditing(true)}>
-                  <Edit2 className="h-4 w-4 text-muted-foreground" />
-                </button>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl font-bold">{user?.name || "Habit Hero"}</h2>
+                  <button onClick={() => setIsEditing(true)}>
+                    <Edit2 className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                </div>
+                <div className={`mt-0.5 flex items-center gap-1.5 text-sm ${rank.color}`}>
+                  <rank.icon className="h-4 w-4" />
+                  <span className="font-medium">{rank.title}</span>
+                </div>
+                {(user as any)?.description && (
+                  <p className="mt-2 text-xs text-foreground/80 italic line-clamp-2">
+                    "{(user as any).description}"
+                  </p>
+                )}
+                <p className="mt-2 text-[10px] text-muted-foreground">
+                  Adventurer since {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : "Today"}
+                </p>
               </div>
             )}
-            <div className={`mt-1 flex items-center gap-1.5 text-sm ${rank.color}`}>
-              <rank.icon className="h-4 w-4" />
-              <span className="font-medium">{rank.title}</span>
-            </div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Member since {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : "Today"}
-            </p>
           </div>
         </div>
       </motion.div>

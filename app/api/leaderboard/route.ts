@@ -12,6 +12,20 @@ export async function GET(req: Request) {
     }
 
     try {
+        if (tab === "weekly") {
+            const startOfWeek = new Date()
+            startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay())
+            startOfWeek.setHours(0, 0, 0, 0)
+
+            // Aggregate habit_logs for the week
+            const { data: weeklyData, error: weeklyError } = await supabase
+                .rpc('get_weekly_leaderboard', { week_start: startOfWeek.toISOString() })
+
+            if (weeklyError) throw weeklyError
+            return NextResponse.json(weeklyData || [])
+        }
+
+        // Global Leaderboard
         let query = supabase
             .from("profiles")
             .select(`
@@ -19,39 +33,24 @@ export async function GET(req: Request) {
         full_name,
         avatar_url,
         username,
-        user_stats!inner (
+        user_stats (
           level,
           total_xp,
           current_overall_streak
         )
       `)
-            .order("total_xp", { referencedTable: "user_stats", ascending: false })
-        // Removed limit to show all users as requested
-
-        if (tab === "friends") {
-            // Fetch friend IDs
-            const { data: friendsData } = await supabase
-                .from("friendships")
-                .select("friend_id")
-                .eq("user_id", user.id)
-                .eq("status", "accepted")
-
-            const friendIds = [user.id, ...(friendsData?.map(f => f.friend_id) || [])]
-            query = query.in("user_id", friendIds)
-        }
 
         const { data, error } = await query
 
         if (error) throw error
 
-        const leaderboard = (data || []).map((entry: any, index: number) => {
+        const leaderboard = (data || []).map((entry: any) => {
             const stats = Array.isArray(entry.user_stats) ? entry.user_stats[0] : entry.user_stats
             const name = (entry.full_name || entry.username || "Habit Hero").trim()
             const avatar = entry.avatar_url && entry.avatar_url !== "" ? entry.avatar_url : name[0].toUpperCase()
 
             return {
                 id: entry.id,
-                rank: index + 1,
                 name,
                 avatar,
                 level: stats?.level || 1,
@@ -59,6 +58,10 @@ export async function GET(req: Request) {
                 xp: stats?.total_xp || 0,
             }
         })
+            .sort((a, b) => b.xp - a.xp)
+            .map((entry, index) => ({ ...entry, rank: index + 1 }))
+
+        return NextResponse.json(leaderboard)
 
         return NextResponse.json(leaderboard)
     } catch (error) {
