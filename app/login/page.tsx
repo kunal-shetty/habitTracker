@@ -9,9 +9,7 @@ export default function LoginPage() {
                     <p className="text-muted-foreground">Sign in to track your habits and build streaks</p>
                 </div>
 
-                <div className="rounded-2xl border bg-card p-8 shadow-sm">
                     <LoginButton />
-                </div>
 
                 <p className="text-xs text-muted-foreground px-8">
                     By signing in, you agree to our Terms of Service and Privacy Policy.
